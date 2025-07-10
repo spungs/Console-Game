@@ -1,0 +1,43 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align items to the top */
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+    font-family: sans-serif;
+    padding-top: 20px; /* Add some padding at the top */
+}
+
+canvas {
+    border: 2px solid #333;
+    background-color: #fff;
+    margin-right: 20px; /* Add some space between canvas and ranking */
+}
+
+#ranking-container {
+    width: 200px;
+    padding: 10px;
+    border: 2px solid #333;
+    background-color: #fff;
+}
+
+h2 {
+    text-align: center;
+    margin-top: 0;
+}
+
+#ranking-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#ranking-list li {
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+}
+
+#ranking-list li:last-child {
+    border-bottom: none;
+}
