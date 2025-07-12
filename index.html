@@ -3,14 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>타임 킬러</title>
+    <title>Dodge Master</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <div id="ranking-container">
-        <h2>랭킹</h2>
-        <ul id="ranking-list"></ul>
+    <div id="header">
+        <div class="header-top">
+            <h1 id="gameTitle">Dodge Master</h1>
+            <button id="languageToggle" onclick="toggleLanguage()">한국어</button>
+        </div>
+        <div id="challenge-message">Beat the best record!</div>
+    </div>
+    <div class="game-container">
+        <div id="timer-box"></div>
+        <div class="game-area">
+            <canvas id="gameCanvas"></canvas>
+            <button id="giveup-btn" onclick="onGiveUp()">Give Up</button>
+        </div>
+        <div id="ranking-container">
+            <h2 id="rankingTitle">Ranking</h2>
+            <ul id="ranking-list"></ul>
+        </div>
+    </div>
+
+    <!-- 게임 오버 모달 -->
+    <div id="gameOverModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Game Over!</h2>
+            <p id="modalTime">Survival Time: <span id="finalTime">0.000</span>s</p>
+            <p id="modalMessage">Enter your name for ranking:</p>
+            <input type="text" id="playerNameInput" placeholder="Player Name" maxlength="20">
+            <div class="modal-buttons">
+                <button id="saveRankingBtn" onclick="saveRankingFromModal()">Save Ranking</button>
+                <button id="closeModalBtn" onclick="closeGameOverModal()">Close</button>
+            </div>
+        </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="game.js"></script>

@@ -1,18 +1,227 @@
 body {
     display: flex;
-    justify-content: center;
-    align-items: flex-start; /* Align items to the top */
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
     font-family: sans-serif;
-    padding-top: 20px; /* Add some padding at the top */
+    padding-top: 20px;
+    box-sizing: border-box;
+    overflow-x: hidden; /* 수평 스크롤 방지 */
+    overflow-y: hidden; /* 수직 스크롤 방지 */
+}
+
+#header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+#gameTitle {
+    margin: 0;
+    color: #333;
+    font-size: 2.5em;
+}
+
+#languageToggle {
+    padding: 8px 16px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+#languageToggle:hover {
+    background-color: #2980b9;
+}
+
+#challenge-message {
+    font-size: 1.2em;
+    color: #e74c3c;
+    font-weight: bold;
+    padding: 10px;
+    background-color: #fff;
+    border: 2px solid #e74c3c;
+    border-radius: 5px;
+    margin: 0 auto;
+    width: fit-content;
+}
+
+.game-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+#timer-box {
+    position: relative;
+    left: 140px;
+    top: -30px;
+    padding: 8px 16px;
+    font-size: 1.1em;
+    font-weight: bold;
+    z-index: 10;
+    pointer-events: none;
+    text-align: center;
+    white-space: nowrap;
+    min-width: 120px;
+    width: 120px;
+    box-sizing: border-box;
+    display: inline-block;
+    margin-bottom: -20px; /* 아래쪽 여백 보정 */
+}
+
+.game-area {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+#giveup-btn {
+    padding: 10px 20px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#giveup-btn:hover {
+    background-color: #c0392b;
+}
+
+/* 모달 스타일 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 15% auto;
+    padding: 30px;
+    border-radius: 10px;
+    width: 400px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-content h2 {
+    margin: 0 0 20px 0;
+    color: #333;
+    font-size: 2em;
+}
+
+.modal-content p {
+    margin: 15px 0;
+    font-size: 1.1em;
+    color: #555;
+}
+
+#finalTime {
+    font-weight: bold;
+    color: #e74c3c;
+    font-size: 1.2em;
+}
+
+#playerNameInput {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+#playerNameInput:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.modal-buttons button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#saveRankingBtn {
+    background-color: #27ae60;
+    color: white;
+}
+
+#saveRankingBtn:hover {
+    background-color: #229954;
+}
+
+#closeModalBtn {
+    background-color: #95a5a6;
+    color: white;
+}
+
+#closeModalBtn:hover {
+    background-color: #7f8c8d;
+}
+
+/* 신기록 스타일 */
+.new-record {
+    color: #e74c3c !important;
+    font-weight: bold;
+    font-size: 1.3em;
+}
+
+.encouragement {
+    color: #f39c12;
+    font-style: italic;
 }
 
 canvas {
     border: 2px solid #333;
     background-color: #fff;
-    margin-right: 20px; /* Add some space between canvas and ranking */
 }
 
 #ranking-container {
