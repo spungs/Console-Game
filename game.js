@@ -6,7 +6,7 @@ canvas.width = 600;
 canvas.height = 500;
 
 // Supabase 클라이언트 초기화
-const SUPABASE_URL = 'https://shueysnmlgmczilyushe.supabase.co';
+const SUPABASE_URL = 'https://shueysnmlgmczilyushe.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNodWV5c25tbGdtY3ppbHl1c2hlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxMzMxODMsImV4cCI6MjA2NzcwOTE4M30.mQMPZoIf5r5aeXTFCjucyhiLlHdIM6nYy3TJTlvMAo0';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -74,6 +74,28 @@ let gameTime = 0;
 let startTime = Date.now();
 let finalGameTime = 0; // 최종 게임 시간 (정지된 시간)
 let isNewRecord = false; // 신기록 여부
+let isPaused = false; // 게임 일시정지 상태
+let pauseStartTime = 0; // 일시정지 시작 시간
+let totalPauseTime = 0; // 총 일시정지 시간
+
+// 페이지 가시성 변경 감지
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        // 탭이 비활성화되면 게임 일시정지
+        if (!gameOver && !isPaused) {
+            isPaused = true;
+            pauseStartTime = Date.now();
+            console.log('게임 일시정지: 탭 비활성화');
+        }
+    } else {
+        // 탭이 다시 활성화되면 게임 재개
+        if (!gameOver && isPaused) {
+            isPaused = false;
+            totalPauseTime += Date.now() - pauseStartTime;
+            console.log('게임 재개: 탭 활성화');
+        }
+    }
+});
 
 // 플레이어 설정
 const player = {
@@ -448,7 +470,12 @@ function updateTimerBox() {
 
 function updateGameStatus() {
     if (gameOver) return;
-    gameTime = (Date.now() - startTime) / 1000; // 밀리초 단위까지 포함
+    
+    // 일시정지 시간을 제외한 실제 게임 시간 계산
+    const currentTime = Date.now();
+    const actualPlayTime = currentTime - startTime - totalPauseTime;
+    gameTime = actualPlayTime / 1000; // 밀리초 단위까지 포함
+    
     level = Math.floor(gameTime / 10) + 1;
     spawnInterval = Math.max(200, 400 - (level - 1) * 50);
 }
@@ -682,29 +709,42 @@ function gameLoop() {
         return;
     }
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    updateGameStatus();
-    updatePlayerPosition();
-    drawPlayer();
+    // 일시정지 상태가 아닐 때만 게임 업데이트
+    if (!isPaused) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        updateGameStatus();
+        updatePlayerPosition();
+        drawPlayer();
 
-    if (Date.now() - lastSpawnTime > spawnInterval) {
-        spawnEnemy();
-        lastSpawnTime = Date.now();
+        if (Date.now() - lastSpawnTime > spawnInterval) {
+            spawnEnemy();
+            lastSpawnTime = Date.now();
+        }
+
+        enemies.forEach(enemy => {
+            enemy.update();
+            enemy.draw();
+        });
+
+        projectiles.forEach(projectile => {
+            projectile.update();
+            projectile.draw();
+        });
+
+        detectCollisions();
+        updateTimerBox();
+    } else {
+        // 일시정지 상태일 때는 일시정지 메시지 표시
+        const t = texts[currentLanguage];
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.font = '30px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Game Paused', canvas.width / 2, canvas.height / 2);
+        ctx.font = '16px Arial';
+        ctx.fillText('Switch back to this tab to continue', canvas.width / 2, canvas.height / 2 + 40);
     }
-
-    enemies.forEach(enemy => {
-        enemy.update();
-        enemy.draw();
-    });
-
-    projectiles.forEach(projectile => {
-        projectile.update();
-        projectile.draw();
-    });
-
-    detectCollisions();
-    // drawUI(); // 시간 텍스트 제거
-    updateTimerBox(); // 타이머 박스 갱신
 
     requestAnimationFrame(gameLoop);
 }
@@ -715,6 +755,9 @@ function resetGame() {
     gameTime = 0;
     finalGameTime = 0;
     isNewRecord = false;
+    isPaused = false;
+    pauseStartTime = 0;
+    totalPauseTime = 0;
     startTime = Date.now();
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
