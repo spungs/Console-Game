@@ -1,9 +1,27 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// 화면 크기 설정
-canvas.width = 600;
-canvas.height = 500;
+// 캔버스 크기 반응형 조정
+function resizeCanvas() {
+    const canvas = document.getElementById('gameCanvas');
+    if (window.innerWidth <= 768) {
+        // 모바일: 컨테이너 너비에 맞춰 조정
+        const maxWidth = Math.min(400, window.innerWidth - 40);
+        canvas.width = maxWidth; // 실제 픽셀 크기
+        canvas.height = maxWidth * 5 / 6;
+        canvas.style.width = maxWidth + 'px';
+        canvas.style.height = (maxWidth * 5 / 6) + 'px';
+    } else {
+        // 데스크톱: 원래 크기
+        canvas.width = 600;
+        canvas.height = 500;
+        canvas.style.width = '600px';
+        canvas.style.height = '500px';
+    }
+}
+
+// 화면 크기 변경 시 캔버스 재조정
+window.addEventListener('resize', resizeCanvas);
 
 // Supabase 클라이언트 초기화
 const SUPABASE_URL = 'https://shueysnmlgmczilyushe.supabase.co'
@@ -33,7 +51,8 @@ const texts = {
         pleaseEnterName: 'Please enter your name.',
         rankingSaveFailed: 'Failed to save ranking:',
         rankingSaveError: 'Error occurred while saving ranking:',
-        pressToRetry: 'Press Enter or Space to retry',
+        pressToRetry: 'Press Enter or Space or Retry button to retry',
+        retry: 'Retry',
         seconds: 's',
         difficulty: 'Difficulty:',
         time: 'Time:',
@@ -58,7 +77,8 @@ const texts = {
         pleaseEnterName: '플레이어 이름을 입력해주세요.',
         rankingSaveFailed: '랭킹 저장에 실패했습니다:',
         rankingSaveError: '랭킹 저장 중 오류가 발생했습니다:',
-        pressToRetry: 'Enter 또는 Space를 눌러 재시작',
+        pressToRetry: 'Enter 또는 Space 또는 다시하기 버튼을 눌러 재시작',
+        retry: '다시하기',
         seconds: '초',
         difficulty: '난이도:',
         time: '시간:',
@@ -97,12 +117,21 @@ document.addEventListener('visibilitychange', function() {
     }
 });
 
+function getSpeed(baseSpeed = 5) {
+    // 기준: 데스크톱 600px 기준
+    return baseSpeed * (canvas.width / 300);
+}
+
+function getUIScale() {
+    return canvas.width / 300;
+}
+
 // 플레이어 설정
-const player = {
+let player = {
     x: canvas.width / 2,
     y: canvas.height / 2,
-    size: 20,
-    speed: 5,
+    size: 20 * getUIScale(),
+    speed: getSpeed(5),
     color: 'blue',
     health: 100
 };
@@ -173,8 +202,8 @@ class Projectile {
 
 // 적 생성 함수
 function spawnEnemy() {
-    const size = Math.random() * 20 + 10; // 10-30
-    const speed = Math.random() * 1 + 2.5 + (level - 1) * 0.1;
+    const size = (Math.random() * 10 + 10) * getUIScale(); // 10-20 비율 보정
+    const speed = (Math.random() * 1 + 2.5 + (level - 1) * 0.1) * (canvas.width / 600);
     const color = 'red';
 
     let x, y;
@@ -256,6 +285,167 @@ window.addEventListener('keyup', (e) => {
         keys[e.key] = false;
     }
 });
+
+// 모바일 터치 컨트롤 초기화
+function initMobileControls() {
+    const joystick = document.getElementById('joystick');
+    if (!joystick) return;
+
+    let isJoystickActive = false;
+    let joystickCenter = { x: 0, y: 0 };
+    let joystickRadius = 0;
+
+    // 조이스틱 초기화
+    function initJoystick() {
+        const rect = joystick.getBoundingClientRect();
+        joystickCenter = {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2
+        };
+        joystickRadius = rect.width / 2;
+    }
+
+    // 조이스틱 방향 계산
+    function calculateDirection(touchX, touchY) {
+        const deltaX = touchX - joystickCenter.x;
+        const deltaY = touchY - joystickCenter.y;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        if (distance < joystickRadius * 0.3) {
+            // 중앙 영역: 정지
+            return { x: 0, y: 0 };
+        }
+
+        // 방향 계산
+        const angle = Math.atan2(deltaY, deltaX);
+        const normalizedDistance = Math.min(distance / joystickRadius, 1);
+        
+        return {
+            x: Math.cos(angle) * normalizedDistance,
+            y: Math.sin(angle) * normalizedDistance
+        };
+    }
+
+    // 조이스틱 스틱 위치 업데이트
+    function updateJoystickStick(direction) {
+        const stick = joystick.querySelector('.joystick-stick');
+        const maxOffset = joystickRadius * 0.4; // 스틱 최대 이동 거리
+        
+        stick.style.left = `${50 + direction.x * 25}%`;
+        stick.style.top = `${50 + direction.y * 25}%`;
+        stick.style.transform = `translate(-50%, -50%)`;
+    }
+
+    // 키 입력 상태 업데이트
+    function updateKeys(direction) {
+        // 기존 키 상태 초기화
+        keys.ArrowUp = false;
+        keys.ArrowDown = false;
+        keys.ArrowLeft = false;
+        keys.ArrowRight = false;
+
+        // 방향에 따른 키 설정
+        if (direction.y < -0.3) keys.ArrowUp = true;
+        if (direction.y > 0.3) keys.ArrowDown = true;
+        if (direction.x < -0.3) keys.ArrowLeft = true;
+        if (direction.x > 0.3) keys.ArrowRight = true;
+    }
+
+    // 조이스틱 클래스 업데이트 (시각적 피드백)
+    function updateJoystickClass(direction) {
+        joystick.className = 'joystick-container';
+        
+        if (direction.x === 0 && direction.y === 0) return;
+        
+        if (direction.y < -0.3) joystick.classList.add('up');
+        if (direction.y > 0.3) joystick.classList.add('down');
+        if (direction.x < -0.3) joystick.classList.add('left');
+        if (direction.x > 0.3) joystick.classList.add('right');
+    }
+
+    // 터치 이벤트
+    function handleTouchStart(e) {
+        e.preventDefault();
+        isJoystickActive = true;
+        joystick.classList.add('pressed');
+        handleTouchMove(e);
+    }
+
+    function handleTouchMove(e) {
+        if (!isJoystickActive) return;
+        e.preventDefault();
+        
+        const touch = e.touches[0] || e.changedTouches[0];
+        const direction = calculateDirection(touch.clientX, touch.clientY);
+        
+        updateJoystickStick(direction);
+        updateKeys(direction);
+        updateJoystickClass(direction);
+    }
+
+    function handleTouchEnd(e) {
+        e.preventDefault();
+        isJoystickActive = false;
+        joystick.classList.remove('pressed');
+        
+        // 조이스틱 중앙으로 리셋
+        const stick = joystick.querySelector('.joystick-stick');
+        stick.style.left = '50%';
+        stick.style.top = '50%';
+        stick.style.transform = 'translate(-50%, -50%)';
+        
+        // 키 상태 초기화
+        updateKeys({ x: 0, y: 0 });
+        updateJoystickClass({ x: 0, y: 0 });
+    }
+
+    // 마우스 이벤트 (데스크톱 테스트용)
+    function handleMouseDown(e) {
+        e.preventDefault();
+        isJoystickActive = true;
+        joystick.classList.add('pressed');
+        handleMouseMove(e);
+    }
+
+    function handleMouseMove(e) {
+        if (!isJoystickActive) return;
+        e.preventDefault();
+        
+        const direction = calculateDirection(e.clientX, e.clientY);
+        updateJoystickStick(direction);
+        updateKeys(direction);
+        updateJoystickClass(direction);
+    }
+
+    function handleMouseUp(e) {
+        e.preventDefault();
+        isJoystickActive = false;
+        joystick.classList.remove('pressed');
+        
+        // 조이스틱 중앙으로 리셋
+        const stick = joystick.querySelector('.joystick-stick');
+        stick.style.left = '50%';
+        stick.style.top = '50%';
+        stick.style.transform = 'translate(-50%, -50%)';
+        
+        // 키 상태 초기화
+        updateKeys({ x: 0, y: 0 });
+        updateJoystickClass({ x: 0, y: 0 });
+    }
+
+    // 이벤트 리스너 등록
+    joystick.addEventListener('touchstart', handleTouchStart, { passive: false });
+    joystick.addEventListener('touchmove', handleTouchMove, { passive: false });
+    joystick.addEventListener('touchend', handleTouchEnd, { passive: false });
+    
+    joystick.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    // 초기화
+    initJoystick();
+    window.addEventListener('resize', initJoystick);
+}
 
 // 자동 플레이 모드
 let autoPlayEnabled = false; // true로 바꾸면 자동 회피, false로 바꾸면 수동 조작
@@ -456,6 +646,7 @@ function drawPlayer() {
 }
 
 function drawUI() {
+    ctx.font = `${16 * getUIScale()}px Arial`;
     // 시간 텍스트를 캔버스에 그리지 않음
     // 대신 별도의 DOM 요소로 표시
 }
@@ -571,8 +762,9 @@ function updateAllTexts() {
     // 랭킹 제목
     document.getElementById('rankingTitle').textContent = t.rankingTitle;
     
-    // 테스트 버튼
+    // 게임 버튼들
     document.getElementById('giveup-btn').textContent = t.giveUpBtn;
+    document.getElementById('retry-btn').textContent = t.retry;
     
     // 도전 메시지 업데이트
     updateChallengeMessage();
@@ -675,6 +867,25 @@ async function saveRankingFromModal() {
     }
 }
 
+let intervalId = null; // autoAttack setInterval ID
+
+// 게임 재시작
+function retryGame() {
+    const elapsed = (Date.now() - hiddenTimer) / 1000; // 초 단위
+    if (elapsed > 40) {
+        window.location.reload();
+    } else {
+        resetGame();
+    }
+}
+
+// 게임 오버 상태에서 Enter/Space 키로도 새로고침
+window.addEventListener('keydown', function(e) {
+    if (gameOver && (e.key === 'Enter' || e.key === ' ' || e.code === 'Space')) {
+        window.location.reload();
+    }
+});
+
 // 게임 오버 모달 닫기
 function closeGameOverModal() {
     const modal = document.getElementById('gameOverModal');
@@ -694,20 +905,22 @@ function updateChallengeMessage() {
 }
 
 function gameLoop() {
-    if (gameOver) {
-        const t = texts[currentLanguage];
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'white';
-        ctx.font = '50px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(t.gameOver.toUpperCase(), canvas.width / 2, canvas.height / 2);
-        ctx.font = '20px Arial';
-        const displayTime = finalGameTime > 0 ? finalGameTime.toFixed(3) : gameTime.toFixed(3);
-        ctx.fillText(`${t.survivalTime} ${displayTime}${t.seconds}`, canvas.width / 2, canvas.height / 2 + 40);
-        ctx.fillText(t.pressToRetry, canvas.width / 2, canvas.height / 2 + 80);
-        return;
-    }
+    if (gameOver) return;
+    // {
+    //     const t = texts[currentLanguage];
+    //     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    //     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    //     ctx.fillStyle = 'white';
+    //     ctx.font = `${40 * getUIScale()}px Arial`;
+    //     ctx.textAlign = 'center';
+    //     ctx.fillText(t.gameOver.toUpperCase(), canvas.width / 2, canvas.height / 2);
+    //     ctx.font = `${20 * getUIScale()}px Arial`;
+    //     const displayTime = finalGameTime > 0 ? finalGameTime.toFixed(3) : gameTime.toFixed(3);
+    //     ctx.fillText(`${t.survivalTime} ${displayTime}${t.seconds}`, canvas.width / 2, canvas.height / 2 + 40 * getUIScale());
+    //     ctx.font = `${13 * getUIScale()}px Arial`;
+    //     ctx.fillText(t.pressToRetry, canvas.width / 2, canvas.height / 2 + 80 * getUIScale());
+    //     return;
+    // }
 
     // 일시정지 상태가 아닐 때만 게임 업데이트
     if (!isPaused) {
@@ -746,10 +959,21 @@ function gameLoop() {
         ctx.fillText('Switch back to this tab to continue', canvas.width / 2, canvas.height / 2 + 40);
     }
 
-    requestAnimationFrame(gameLoop);
+    animationFrameId = requestAnimationFrame(gameLoop);
 }
 
 function resetGame() {
+    // 기존 루프와 타이머 정리
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+    }
+    if (intervalId) {
+        clearInterval(intervalId);
+    }
+    // 캔버스 크기 조정
+    resizeCanvas();
+
+    // 이제 진짜 초기화
     gameOver = false;
     level = 1;
     gameTime = 0;
@@ -762,17 +986,19 @@ function resetGame() {
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
     player.health = 100;
+    player.size = 20 * getUIScale();
+    player.speed = getSpeed(5);
     enemies.length = 0;
     projectiles.length = 0;
     spawnInterval = 1000;
     lastSpawnTime = 0;
-
-    // 키 상태 초기화
-    for (let key in keys) {
-        keys[key] = false;
-    }
-
+    for (let key in keys) { keys[key] = false; }
+    // player.size는 resizeCanvas() 후에 재설정되어야 하므로 위에서 처리됨
+    updateAllTexts();
+    initMobileControls();
     getRankings();
+    spawnEnemy(); // 적 1마리 즉시 생성
+    intervalId = setInterval(autoAttack, 400);
     gameLoop();
 }
 
@@ -789,9 +1015,18 @@ function onGiveUp() {
 
 // 초기 랭킹 로드 및 게임 시작
 async function initializeGame() {
+    resizeCanvas(); // 반응형 크기 적용
+    player.x = canvas.width / 2;
+    player.y = canvas.height / 2;
+    hiddenTimer = Date.now(); // 게임 시작 시 타이머 초기화
     updateAllTexts(); // 초기 텍스트 설정
+    initMobileControls(); // 모바일 컨트롤 초기화
     await getRankings();
-    setInterval(autoAttack, 400);
+    // autoAttack 중복 방지
+    if (intervalId) {
+        clearInterval(intervalId);
+    }
+    intervalId = setInterval(autoAttack, 400);
     gameLoop();
 }
 

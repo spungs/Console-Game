@@ -9,8 +9,147 @@ body {
     font-family: sans-serif;
     padding-top: 20px;
     box-sizing: border-box;
-    overflow-x: hidden; /* 수평 스크롤 방지 */
-    overflow-y: hidden; /* 수직 스크롤 방지 */
+    /* overflow-x: hidden; */
+    /* overflow-y: hidden; */
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    body {
+        padding-top: 10px;
+    }
+    #header h1 {
+        font-size: 2em;
+    }
+    .game-container {
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
+    }
+    canvas {
+        width: 100%;
+        max-width: 400px;
+        height: auto;
+        aspect-ratio: 6/5;
+    }
+    #ranking-container {
+        width: 100%;
+        max-width: 400px;
+    }
+    .modal-content {
+        width: 90%;
+        max-width: 350px;
+        margin: 10% auto;
+        padding: 20px;
+    }
+    .modal-content h2 {
+        font-size: 1.5em;
+    }
+}
+
+/* 모바일 컨트롤 스타일 */
+.mobile-controls {
+    display: none; /* 기본적으로 숨김 */
+    margin-top: 20px;
+    user-select: none;
+    touch-action: manipulation;
+}
+.control-row {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 5px 0;
+}
+/* 조이스틱 컨테이너 */
+.joystick-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border: 3px solid #333;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.1s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+/* 조이스틱 스틱 */
+.joystick-stick {
+    width: 40px;
+    height: 40px;
+    background: #3498db;
+    border-radius: 50%;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.1s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+/* 조이스틱 방향 표시 */
+.joystick-direction {
+    position: absolute;
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    opacity: 0.7;
+}
+.joystick-direction.up { top: 15px; }
+.joystick-direction.down { bottom: 15px; }
+.joystick-direction.left { left: 15px; }
+.joystick-direction.right { right: 15px; }
+/* 조이스틱 활성화 상태 */
+.joystick-container:active,
+.joystick-container.pressed {
+    background: rgba(52, 152, 219, 0.1);
+    transform: scale(0.95);
+}
+.joystick-container:active .joystick-stick,
+.joystick-container.pressed .joystick-stick {
+    background: #2980b9;
+    transform: scale(1.1);
+}
+/* 방향별 스틱 위치 */
+.joystick-container.up .joystick-stick { top: 15px; }
+.joystick-container.down .joystick-stick { bottom: 15px; }
+.joystick-container.left .joystick-stick { left: 15px; }
+.joystick-container.right .joystick-stick { right: 15px; }
+/* 대각선 방향 */
+.joystick-container.up-left .joystick-stick { top: 15px; left: 15px; }
+.joystick-container.up-right .joystick-stick { top: 15px; right: 15px; }
+.joystick-container.down-left .joystick-stick { bottom: 15px; left: 15px; }
+.joystick-container.down-right .joystick-stick { bottom: 15px; right: 15px; }
+
+/* 모바일에서만 컨트롤 표시 */
+@media (max-width: 768px) {
+    .mobile-controls {
+        display: block;
+    }
+    #retry-btn {
+        display: inline-block;
+    }
+}
+
+/* 데스크톱에서는 컨트롤 숨김 및 중앙정렬, scale(0.9) */
+@media (min-width: 769px) {
+    .mobile-controls {
+        display: none;
+    }
+    body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .game-container {
+        margin: 0;
+        transform: scale(0.9);
+        transform-origin: top center;
+    }
 }
 
 #header {
@@ -102,6 +241,21 @@ body {
 }
 
 #giveup-btn:hover {
+    background-color: #c0392b;
+}
+
+#retry-btn {
+    padding: 10px 20px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 10px;
+}
+
+#retry-btn:hover {
     background-color: #c0392b;
 }
 

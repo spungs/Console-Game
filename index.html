@@ -16,10 +16,24 @@
         <div id="challenge-message">Beat the best record!</div>
     </div>
     <div class="game-container">
-        <div id="timer-box"></div>
         <div class="game-area">
+            <div id="timer-box"></div>
             <canvas id="gameCanvas"></canvas>
-            <button id="giveup-btn" onclick="onGiveUp()">Give Up</button>
+            <div class="game-buttons">
+                <button id="giveup-btn" onclick="onGiveUp()">Give Up</button>
+                <button id="retry-btn" onclick="retryGame()">Retry</button>
+            </div>
+            
+            <!-- 모바일용 조이스틱 컨트롤 -->
+            <div id="mobile-controls" class="mobile-controls">
+                <div class="joystick-container" id="joystick">
+                    <div class="joystick-stick"></div>
+                    <div class="joystick-direction up">↑</div>
+                    <div class="joystick-direction down">↓</div>
+                    <div class="joystick-direction left">←</div>
+                    <div class="joystick-direction right">→</div>
+                </div>
+            </div>
         </div>
         <div id="ranking-container">
             <h2 id="rankingTitle">Ranking</h2>
