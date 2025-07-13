@@ -1191,4 +1191,61 @@ async function initializeGame() {
     gameLoop();
 }
 
+// 조이스틱 토글 상태
+let joystickVisible = true;
+
+function toggleJoystick() {
+    joystickVisible = !joystickVisible;
+    const joystick = document.getElementById('mobile-controls');
+    const btn = document.getElementById('joystick-toggle-btn');
+    if (joystick) {
+        joystick.style.display = joystickVisible ? 'block' : 'none';
+    }
+    if (btn) {
+        btn.textContent = joystickVisible ? '조이스틱 끄기' : '조이스틱 켜기';
+    }
+}
+
+// 토글 스위치로 조이스틱 on/off
+function toggleJoystickSwitch() {
+    const checked = document.getElementById('joystick-toggle-switch').checked;
+    joystickVisible = checked;
+    const joystick = document.getElementById('mobile-controls');
+    const label = document.getElementById('joystick-toggle-label');
+    if (joystick) {
+        joystick.style.display = checked ? 'block' : 'none';
+    }
+    if (label) {
+        label.textContent = checked ? '조이스틱 켜짐' : '조이스틱 꺼짐';
+    }
+}
+
+// 페이지 로드시 조이스틱 토글 버튼 상태 동기화
+window.addEventListener('DOMContentLoaded', () => {
+    const joystick = document.getElementById('mobile-controls');
+    const btn = document.getElementById('joystick-toggle-btn');
+    if (joystick) {
+        joystick.style.display = joystickVisible ? 'block' : 'none';
+    }
+    if (btn) {
+        btn.textContent = joystickVisible ? '조이스틱 끄기' : '조이스틱 켜기';
+    }
+});
+
+// 페이지 로드시 토글 스위치 상태 동기화
+window.addEventListener('DOMContentLoaded', () => {
+    const joystick = document.getElementById('mobile-controls');
+    const toggle = document.getElementById('joystick-toggle-switch');
+    const label = document.getElementById('joystick-toggle-label');
+    if (joystick) {
+        joystick.style.display = joystickVisible ? 'block' : 'none';
+    }
+    if (toggle) {
+        toggle.checked = joystickVisible;
+    }
+    if (label) {
+        label.textContent = joystickVisible ? '조이스틱 켜짐' : '조이스틱 꺼짐';
+    }
+});
+
 initializeGame();
