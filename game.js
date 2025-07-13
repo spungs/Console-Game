@@ -130,8 +130,10 @@ function getUIScale() {
 let player = {
     x: canvas.width / 2,
     y: canvas.height / 2,
-    size: 20 * getUIScale(),
-    speed: getSpeed(5),
+    // size: 20 * getUIScale(),
+    size: 20,
+    // speed: getSpeed(5),
+    speed: 5,
     color: 'blue',
     health: 100
 };
@@ -1007,8 +1009,10 @@ function resetGame() {
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
     player.health = 100;
-    player.size = 20 * getUIScale();
-    player.speed = getSpeed(5);
+    // player.size = 20 * getUIScale();
+    player.size = 20;
+    // player.speed = getSpeed(5);
+    player.speed = 5;
     enemies.length = 0;
     projectiles.length = 0;
     spawnInterval = 1000;
