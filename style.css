@@ -256,7 +256,7 @@ body {
 
 #header {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     margin-top: 100px;
 }
 
@@ -264,7 +264,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    /* margin-bottom: 10px; */
 }
 
 #gameTitle {
@@ -308,7 +308,7 @@ body {
 }
 
 #timer-box {
-    position: relative;
+    /* position: relative; */
     left: 140px;
     top: -30px;
     padding: 8px 16px;
@@ -503,6 +503,7 @@ h2 {
 #ranking-list li {
     padding: 5px 0;
     border-bottom: 1px solid #eee;
+    font-size: 0.85em;
 }
 
 #ranking-list li:last-child {
