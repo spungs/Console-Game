@@ -803,7 +803,7 @@ async function getRankings() {
         // console.log('getRankings 함수 호출됨');
         const { data, error } = await supabaseClient
             .from('rankings')
-            .select('player_name, survival_time')
+            .select('player_name, survival_time, created_at')
             .order('survival_time', { ascending: false })
             .limit(10);
 
@@ -833,7 +833,20 @@ async function getRankings() {
         data.forEach((rank, index) => {
             const li = document.createElement('li');
             const survivalTime = parseFloat(rank.survival_time);
-            li.textContent = `#${index + 1} ${rank.player_name} - ${survivalTime.toFixed(3)}s`;
+            // created_at을 UTC yyyy-mm-dd hh:MM:ss로 포맷
+            let dateStr = '';
+            if (rank.created_at) {
+                const d = new Date(rank.created_at);
+                const yyyy = d.getUTCFullYear();
+                const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+                const dd = String(d.getUTCDate()).padStart(2, '0');
+                const hh = String(d.getUTCHours()).padStart(2, '0');
+                const min = String(d.getUTCMinutes()).padStart(2, '0');
+                const ss = String(d.getUTCSeconds()).padStart(2, '0');
+                dateStr = `(UTC)${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+            }
+            li.innerHTML = `#${index + 1} ${rank.player_name} - ${survivalTime.toFixed(3)}s` +
+                (dateStr ? `<br><span style='font-size:0.95em;color:#888;'>${dateStr}</span>` : '');
             rankingList.appendChild(li);
         });
     } catch (err) {
