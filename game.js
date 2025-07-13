@@ -330,7 +330,7 @@ function initMobileControls() {
     let joystickCenter = { x: 0, y: 0 };
     let joystickRadius = 0;
     let currentDirection = { x: 0, y: 0, magnitude: 0 };
-    let deadZone = 0.07; // 데드존 (중앙 영역)
+    let deadZone = 0.05; // 데드존 (중앙 영역)
 
     // 조이스틱 초기화
     function initJoystick() {
