@@ -31,6 +31,9 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // 언어 설정
 let currentLanguage = 'en'; // 'en' 또는 'ko'
 
+// 국가 선택 관련 변수
+let selectedCountryCode = null;
+
 // 언어별 텍스트
 const texts = {
     en: {
@@ -60,7 +63,10 @@ const texts = {
         giveUpBtn: 'Give Up',
         joystickOn: 'Joystick On',
         joystickOff: 'Joystick Off',
-        rankingSearchPlaceholder: 'Search nickname'
+        rankingSearchPlaceholder: 'Search nickname',
+        countryLabel: 'Country:',
+        countrySearchPlaceholder: 'Search country...',
+        pleaseSelectCountry: 'Please select a country.'
     },
     ko: {
         gameTitle: '닷지 마스터',
@@ -89,7 +95,10 @@ const texts = {
         giveUpBtn: '포기하기',
         joystickOn: '조이스틱 켜짐',
         joystickOff: '조이스틱 꺼짐',
-        rankingSearchPlaceholder: '닉네임 검색'
+        rankingSearchPlaceholder: '닉네임 검색',
+        countryLabel: '국가:',
+        countrySearchPlaceholder: '국가 검색...',
+        pleaseSelectCountry: '국가를 선택해주세요.'
     }
 };
 
@@ -548,190 +557,22 @@ function initMobileControls() {
     window.addEventListener('resize', initJoystick);
 }
 
-// 자동 플레이 모드
-let autoPlayEnabled = false; // true로 바꾸면 자동 회피, false로 바꾸면 수동 조작
 let bestTime = 0.0; // 최고 기록 저장 (소수점 포함)
 
-// 고급 자동 회피 시스템
-class AdvancedAutoPlayer {
-    constructor() {
-        this.safetyMargin = 30; // 안전 마진
-        this.predictionTime = 0.5; // 미래 예측 시간 (초)
-        this.avoidanceRadius = 120; // 회피 반경
-        this.maxSpeed = 5; // 최대 속도
-    }
-
-    // 적의 미래 위치 예측
-    predictEnemyPosition(enemy, timeAhead) {
-        const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-        const futureX = enemy.x + Math.cos(angle) * enemy.speed * timeAhead * 60; // 60fps 기준
-        const futureY = enemy.y + Math.sin(angle) * enemy.speed * timeAhead * 60;
-        return { x: futureX, y: futureY };
-    }
-
-    // 특정 위치의 위험도 계산
-    calculateDangerAt(x, y) {
-        let totalDanger = 0;
-        
-        enemies.forEach(enemy => {
-            const dist = Math.hypot(x - enemy.x, y - enemy.y);
-            if (dist < this.avoidanceRadius) {
-                // 거리가 가까울수록 위험도 증가
-                const danger = Math.max(0, (this.avoidanceRadius - dist) / this.avoidanceRadius);
-                totalDanger += danger * danger; // 제곱으로 더 급격한 위험도 증가
-            }
-        });
-
-        return totalDanger;
-    }
-
-    // 8방향 중 가장 안전한 방향 찾기
-    findSafestDirection() {
-        const directions = [
-            { x: 0, y: -1 },   // 위
-            { x: 1, y: -1 },   // 우상
-            { x: 1, y: 0 },    // 우
-            { x: 1, y: 1 },    // 우하
-            { x: 0, y: 1 },    // 아래
-            { x: -1, y: 1 },   // 좌하
-            { x: -1, y: 0 },   // 좌
-            { x: -1, y: -1 }   // 좌상
-        ];
-
-        let bestDirection = { x: 0, y: 0 };
-        let lowestDanger = Infinity;
-
-        directions.forEach(dir => {
-            const testX = player.x + dir.x * this.maxSpeed;
-            const testY = player.y + dir.y * this.maxSpeed;
-            
-            // 화면 경계 체크
-            if (testX < 0 || testX > canvas.width - player.size || 
-                testY < 0 || testY > canvas.height - player.size) {
-                return;
-            }
-
-            const danger = this.calculateDangerAt(testX, testY);
-            if (danger < lowestDanger) {
-                lowestDanger = danger;
-                bestDirection = dir;
-            }
-        });
-
-        return bestDirection;
-    }
-
-    // 긴급 회피 (가장 가까운 적으로부터 도망)
-    emergencyEscape() {
-        if (enemies.length === 0) return { x: 0, y: 0 };
-
-        // 가장 가까운 적 찾기
-        let closestEnemy = enemies[0];
-        let closestDist = Math.hypot(player.x - closestEnemy.x, player.y - closestEnemy.y);
-
-        enemies.forEach(enemy => {
-            const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
-            if (dist < closestDist) {
-                closestDist = dist;
-                closestEnemy = enemy;
-            }
-        });
-
-        // 가장 가까운 적으로부터 반대 방향으로 이동
-        const escapeX = player.x - closestEnemy.x;
-        const escapeY = player.y - closestEnemy.y;
-        const magnitude = Math.hypot(escapeX, escapeY);
-
-        if (magnitude > 0) {
-            return {
-                x: (escapeX / magnitude) * this.maxSpeed,
-                y: (escapeY / magnitude) * this.maxSpeed
-            };
-        }
-
-        return { x: 0, y: 0 };
-    }
-
-    // 스마트 회피 결정
-    getMoveDirection() {
-        // 긴급 상황 체크 (매우 가까운 적이 있는 경우)
-        const emergencyThreshold = 40;
-        let hasEmergency = false;
-        
-        enemies.forEach(enemy => {
-            const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
-            if (dist < emergencyThreshold) {
-                hasEmergency = true;
-            }
-        });
-
-        if (hasEmergency) {
-            return this.emergencyEscape();
-        }
-
-        // 일반적인 상황에서는 가장 안전한 방향으로 이동
-        const safestDir = this.findSafestDirection();
-        
-        // 현재 위치의 위험도가 낮으면 제자리에 머무름
-        const currentDanger = this.calculateDangerAt(player.x, player.y);
-        if (currentDanger < 0.1) {
-            return { x: 0, y: 0 };
-        }
-
-        // 미래 예측을 통한 추가 회피
-        const futureDanger = this.calculateFutureDanger();
-        if (futureDanger > currentDanger * 1.5) {
-            // 미래에 더 위험해질 것 같으면 더 적극적으로 회피
-            return {
-                x: safestDir.x * this.maxSpeed * 1.2,
-                y: safestDir.y * this.maxSpeed * 1.2
-            };
-        }
-
-        return {
-            x: safestDir.x * this.maxSpeed,
-            y: safestDir.y * this.maxSpeed
-        };
-    }
-
-    // 미래 위험도 계산
-    calculateFutureDanger() {
-        let totalFutureDanger = 0;
-        
-        enemies.forEach(enemy => {
-            const futurePos = this.predictEnemyPosition(enemy, this.predictionTime);
-            const dist = Math.hypot(player.x - futurePos.x, player.y - futurePos.y);
-            if (dist < this.avoidanceRadius) {
-                const danger = Math.max(0, (this.avoidanceRadius - dist) / this.avoidanceRadius);
-                totalFutureDanger += danger * danger;
-            }
-        });
-
-        return totalFutureDanger;
-    }
-}
-
-const autoPlayer = new AdvancedAutoPlayer();
 
 function updatePlayerPosition() {
-    if (autoPlayEnabled) {
-        const move = autoPlayer.getMoveDirection();
-        player.x += move.x;
-        player.y += move.y;
-    } else {
-        // 기존 키보드 입력에 따른 이동
-        if (keys.ArrowUp && player.y > 0) {
-            player.y -= player.speed;
-        }
-        if (keys.ArrowDown && player.y < canvas.height - player.size) {
-            player.y += player.speed;
-        }
-        if (keys.ArrowLeft && player.x > 0) {
-            player.x -= player.speed;
-        }
-        if (keys.ArrowRight && player.x < canvas.width - player.size) {
-            player.x += player.speed;
-        }
+    // 기존 키보드 입력에 따른 이동
+    if (keys.ArrowUp && player.y > 0) {
+        player.y -= player.speed;
+    }
+    if (keys.ArrowDown && player.y < canvas.height - player.size) {
+        player.y += player.speed;
+    }
+    if (keys.ArrowLeft && player.x > 0) {
+        player.x -= player.speed;
+    }
+    if (keys.ArrowRight && player.x < canvas.width - player.size) {
+        player.x += player.speed;
     }
 
     // 화면 밖으로 나가지 않도록 처리
@@ -745,12 +586,6 @@ function drawPlayer() {
     ctx.fillStyle = player.color;
     const scale = getUIScale();
     ctx.fillRect(player.x, player.y, player.size * scale, player.size * scale);
-}
-
-function drawUI() {
-    ctx.font = `${16 * getUIScale()}px Arial`;
-    // 시간 텍스트를 캔버스에 그리지 않음
-    // 대신 별도의 DOM 요소로 표시
 }
 
 // 타이머 갱신 함수
@@ -771,39 +606,6 @@ function updateGameStatus() {
     
     level = Math.floor(gameTime / 10) + 1;
     spawnInterval = Math.max(200, 400 - (level - 1) * 50);
-}
-
-async function saveRanking() {
-    // console.log('saveRanking 함수 호출됨, gameTime:', gameTime);
-    
-    try {
-        const playerName = prompt('게임 오버! 랭킹에 등록할 이름을 입력하세요:', 'Player');
-        // console.log('입력된 플레이어 이름:', playerName);
-        
-        if (playerName && playerName.trim() !== '') {
-            // console.log('Supabase에 저장 시도 중...');
-            const { data, error } = await supabaseClient
-                .from('rankings')
-                .insert({ 
-                    player_name: playerName.trim(), 
-                    survival_time: parseFloat(gameTime) 
-                });
-            
-            if (error) {
-                console.error('랭킹 저장 실패:', error);
-                alert('랭킹 저장에 실패했습니다: ' + error.message);
-            } else {
-                // console.log('랭킹 저장 성공:', data);
-                await getRankings();
-            }
-        } else {
-            // console.log('플레이어 이름이 입력되지 않았습니다.');
-        }
-    } catch (err) {
-        // console.error('saveRanking 함수에서 예외 발생:', err);
-        console.error('랭킹 저장 중 예외 발생:', err);
-        alert('랭킹 저장 중 오류가 발생했습니다: ' + err.message);
-    }
 }
 
 // 랭킹 페이지네이션 및 검색 상태
@@ -922,7 +724,18 @@ async function getRankings() {
                 const ss = String(d.getUTCSeconds()).padStart(2, '0');
                 dateStr = `(UTC)${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
             }
-            li.innerHTML = `#${rank.rank} ${rank.player_name} - ${survivalTime.toFixed(3)}s` +
+            
+            // 국가 정보 표시
+            let countryInfo = '';
+            if (rank.country_code) {
+                const country = findCountryByCode(rank.country_code);
+                if (country) {
+                    countryInfo = `${country.flag}`;
+                }
+            }
+            
+            // '순위 국기 닉네임 시간' 순서로 표시
+            li.innerHTML = `#${rank.rank} ${countryInfo} ${rank.player_name} <span style='font-weight:bold;'>${survivalTime.toFixed(3)}s</span>` +
                 (dateStr ? `<br><span style='font-size:0.95em;color:#888;'>${dateStr}</span>` : '');
             rankingList.appendChild(li);
         });
@@ -967,6 +780,19 @@ function updateAllTexts() {
     if (searchInput) {
         searchInput.placeholder = t.rankingSearchPlaceholder;
     }
+    
+    // 국가 선택 관련 텍스트 업데이트
+    const countrySelectLabel = document.getElementById('countrySelectLabel');
+    const countrySearchInput = document.getElementById('countrySearchInput');
+    if (countrySelectLabel) {
+        countrySelectLabel.textContent = t.countryLabel;
+    }
+    if (countrySearchInput) {
+        countrySearchInput.placeholder = t.countrySearchPlaceholder;
+    }
+    
+    // 국가 목록 다시 로드 (언어 변경 시)
+    loadCountryOptions();
 }
 
 // 신기록 체크
@@ -1032,6 +858,9 @@ function showGameOverModal() {
     playerNameInput.value = '';
     playerNameInput.focus();
 
+    // 국가 선택 초기화
+    initializeCountrySelect();
+
     // 모달 표시
     // console.log('모달을 표시합니다...');
     modal.style.display = 'block';
@@ -1057,13 +886,19 @@ async function saveRankingFromModal() {
         return;
     }
 
+    if (!selectedCountryCode) {
+        alert(t.pleaseSelectCountry);
+        return;
+    }
+
     try {
-        // console.log('모달에서 랭킹 저장 시도:', playerName, finalGameTime);
+        // console.log('모달에서 랭킹 저장 시도:', playerName, finalGameTime, selectedCountryCode);
         const { data, error } = await supabaseClient
             .from('rankings')
             .insert({ 
                 player_name: playerName, 
-                survival_time: parseFloat(finalGameTime) 
+                survival_time: parseFloat(finalGameTime),
+                country_code: selectedCountryCode
             });
         
         if (error) {
@@ -1071,6 +906,8 @@ async function saveRankingFromModal() {
             alert(t.rankingSaveFailed + ' ' + error.message);
         } else {
             // console.log('랭킹 저장 성공:', data);
+            // 선택한 국가를 로컬스토리지에 저장
+            localStorage.setItem('selectedCountry', selectedCountryCode);
             closeGameOverModal();
             await getBestRecord(); // 최고기록 먼저 업데이트
             await getRankings();
@@ -1088,9 +925,82 @@ function retryGame() {
     resetGame();
 }
 
-// 게임 오버 상태에서 Enter/Space 키 이벤트 제거 (모달이 켜져있을 때는 동작하지 않음)
+// 국가 선택 초기화
+function initializeCountrySelect() {
+    const countrySelect = document.getElementById('countrySelect');
+    const countrySearchInput = document.getElementById('countrySearchInput');
+    const countrySelectLabel = document.getElementById('countrySelectLabel');
+    
+    if (!countrySelect || !countrySearchInput || !countrySelectLabel) {
+        console.error('국가 선택 요소를 찾을 수 없습니다!');
+        return;
+    }
+    
+    const t = texts[currentLanguage];
+    countrySelectLabel.textContent = t.countryLabel;
+    countrySearchInput.placeholder = t.countrySearchPlaceholder;
+    
+    // 국가 목록 로드
+    loadCountryOptions();
+    
+    // 검색 기능
+    countrySearchInput.addEventListener('input', function() {
+        filterCountries(this.value);
+    });
+    
+    // 국가 선택 이벤트
+    countrySelect.addEventListener('change', function() {
+        selectedCountryCode = this.value;
+        localStorage.setItem('selectedCountry', selectedCountryCode);
+    });
+    
+    // 이전에 선택한 국가가 있으면 선택
+    const savedCountry = localStorage.getItem('selectedCountry');
+    if (savedCountry) {
+        selectedCountryCode = savedCountry;
+        countrySelect.value = savedCountry;
+    }
+}
 
-// 게임 오버 모달 닫기
+// 국가 옵션 로드
+function loadCountryOptions() {
+    const countrySelect = document.getElementById('countrySelect');
+    if (!countrySelect) return;
+    
+    countrySelect.innerHTML = '';
+    const sortedCountries = getSortedCountries(currentLanguage);
+    
+    sortedCountries.forEach(country => {
+        const option = document.createElement('option');
+        option.value = country.code;
+        option.textContent = `${country.flag} ${getCountryName(country, currentLanguage)}`;
+        countrySelect.appendChild(option);
+    });
+}
+
+// 국가 검색 필터링
+function filterCountries(searchTerm) {
+    const countrySelect = document.getElementById('countrySelect');
+    if (!countrySelect) return;
+    
+    const options = countrySelect.options;
+    const searchLower = searchTerm.toLowerCase();
+    
+    for (let i = 0; i < options.length; i++) {
+        const option = options[i];
+        const text = option.textContent.toLowerCase();
+        const country = findCountryByCode(option.value);
+        
+        // code, name, nameKo로 검색
+        const matches = text.includes(searchLower) || 
+                       country.code.toLowerCase().includes(searchLower) ||
+                       country.name.toLowerCase().includes(searchLower) ||
+                       country.nameKo.includes(searchTerm);
+        
+        option.style.display = matches ? '' : 'none';
+    }
+}
+
 function closeGameOverModal() {
     const modal = document.getElementById('gameOverModal');
     modal.style.display = 'none';
@@ -1225,6 +1135,7 @@ async function initializeGame() {
     player.y = canvas.height / 2;
     updateAllTexts(); // 초기 텍스트 설정
     initMobileControls(); // 모바일 컨트롤 초기화
+    initializeCountrySelect(); // 국가 선택 초기화
     await getBestRecord(); // 최고기록 먼저 로드
     await getRankings();
     // autoAttack 중복 방지

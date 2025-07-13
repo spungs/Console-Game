@@ -63,6 +63,15 @@
             <p id="modalTime">Survival Time: <span id="finalTime">0.000</span>s</p>
             <p id="modalMessage">Enter your name for ranking:</p>
             <input type="text" id="playerNameInput" placeholder="Player Name" maxlength="20">
+            <div class="country-select-container">
+                <label for="countrySelect" id="countrySelectLabel">Country:</label>
+                <div class="select-wrapper">
+                    <input type="text" id="countrySearchInput" placeholder="Search country..." autocomplete="off">
+                    <select id="countrySelect" size="8">
+                        <!-- 국가 옵션들이 여기에 동적으로 추가됩니다 -->
+                    </select>
+                </div>
+            </div>
             <div class="modal-buttons">
                 <button id="saveRankingBtn" onclick="saveRankingFromModal()">Save Ranking</button>
                 <button id="closeModalBtn" onclick="closeGameOverModal()">Close</button>
@@ -70,6 +79,7 @@
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="country-list.js"></script>
     <script src="game.js"></script>
 </body>
 </html>
