@@ -488,6 +488,24 @@ canvas {
     background-color: #fff;
 }
 
+#ranking-container .ranking-search-row {
+  display: flex;
+  gap: 2%;
+  margin-bottom: 8px;
+}
+#ranking-search {
+  width: 70%;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  font-size: 1em;
+}
+#ranking-search-btn {
+  width: 28%;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  font-size: 1em;
+}
+
 h2 {
     text-align: center;
     margin-top: 0;

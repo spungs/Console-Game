@@ -59,7 +59,8 @@ const texts = {
         challengeTemplate: 'Try to exceed the record of <span style="color:green">{time}</span> seconds.',
         giveUpBtn: 'Give Up',
         joystickOn: 'Joystick On',
-        joystickOff: 'Joystick Off'
+        joystickOff: 'Joystick Off',
+        rankingSearchPlaceholder: 'Search nickname'
     },
     ko: {
         gameTitle: '닷지 마스터',
@@ -87,7 +88,8 @@ const texts = {
         challengeTemplate: '최고 기록 <span style="color:green">{time}</span>초를 넘겨보세요!',
         giveUpBtn: '포기하기',
         joystickOn: '조이스틱 켜짐',
-        joystickOff: '조이스틱 꺼짐'
+        joystickOff: '조이스틱 꺼짐',
+        rankingSearchPlaceholder: '닉네임 검색'
     }
 };
 
@@ -847,11 +849,17 @@ function renderRankingPagination() {
 // 검색 입력 이벤트 등록
 window.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('ranking-search');
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            rankingSearch = e.target.value.trim();
+    const searchBtn = document.getElementById('ranking-search-btn');
+    if (searchBtn && searchInput) {
+        searchBtn.addEventListener('click', () => {
+            rankingSearch = searchInput.value.trim();
             rankingPage = 1;
             getRankings();
+        });
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                searchBtn.click();
+            }
         });
     }
 });
@@ -953,6 +961,12 @@ function updateAllTexts() {
     
     // 도전 메시지 업데이트
     updateChallengeMessage();
+
+    // 랭킹 검색 placeholder
+    const searchInput = document.getElementById('ranking-search');
+    if (searchInput) {
+        searchInput.placeholder = t.rankingSearchPlaceholder;
+    }
 }
 
 // 신기록 체크
