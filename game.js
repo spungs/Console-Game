@@ -296,11 +296,25 @@ window.addEventListener('keyup', (e) => {
 // 모바일 터치 컨트롤 초기화
 function initMobileControls() {
     const joystick = document.getElementById('joystick');
-    if (!joystick) return;
+    if (!joystick) {
+        console.warn('조이스틱 요소를 찾을 수 없습니다.');
+        return;
+    }
+
+    // 필수 요소들이 있는지 확인
+    const stick = joystick.querySelector('.joystick-stick');
+    const pressure = joystick.querySelector('.joystick-pressure');
+    
+    if (!stick) {
+        console.warn('조이스틱 스틱 요소를 찾을 수 없습니다.');
+        return;
+    }
 
     let isJoystickActive = false;
     let joystickCenter = { x: 0, y: 0 };
     let joystickRadius = 0;
+    let currentDirection = { x: 0, y: 0, magnitude: 0 };
+    let deadZone = 0.15; // 데드존 (중앙 영역)
 
     // 조이스틱 초기화
     function initJoystick() {
@@ -313,15 +327,15 @@ function initMobileControls() {
         // console.log('조이스틱 중심 재계산:', joystickCenter, '반지름:', joystickRadius);
     }
 
-    // 조이스틱 방향 계산
+    // 개선된 조이스틱 방향 계산 (360도 아날로그 입력)
     function calculateDirection(touchX, touchY) {
         const deltaX = touchX - joystickCenter.x;
         const deltaY = touchY - joystickCenter.y;
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         
-        if (distance < joystickRadius * 0.3) {
-            // 중앙 영역: 정지
-            return { x: 0, y: 0 };
+        // 데드존 체크
+        if (distance < joystickRadius * deadZone) {
+            return { x: 0, y: 0, magnitude: 0 };
         }
 
         // 방향 계산
@@ -330,21 +344,45 @@ function initMobileControls() {
         
         return {
             x: Math.cos(angle) * normalizedDistance,
-            y: Math.sin(angle) * normalizedDistance
+            y: Math.sin(angle) * normalizedDistance,
+            magnitude: normalizedDistance
         };
     }
 
-    // 조이스틱 스틱 위치 업데이트
+    // 개선된 조이스틱 스틱 위치 업데이트
     function updateJoystickStick(direction) {
         const stick = joystick.querySelector('.joystick-stick');
-        const maxOffset = joystickRadius * 0.4; // 스틱 최대 이동 거리
+        const pressure = joystick.querySelector('.joystick-pressure');
         
-        stick.style.left = `${50 + direction.x * 25}%`;
-        stick.style.top = `${50 + direction.y * 25}%`;
+        // null 체크 추가
+        if (!stick) {
+            console.warn('조이스틱 스틱 요소를 찾을 수 없습니다.');
+            return;
+        }
+        
+        const maxOffset = joystickRadius * 0.35; // 스틱 최대 이동 거리
+        
+        // 스틱 위치 업데이트
+        const offsetX = direction.x * maxOffset;
+        const offsetY = direction.y * maxOffset;
+        
+        stick.style.left = `${50 + (offsetX / joystickRadius) * 50}%`;
+        stick.style.top = `${50 + (offsetY / joystickRadius) * 50}%`;
         stick.style.transform = `translate(-50%, -50%)`;
+        
+        // 압력 표시 업데이트 (null 체크 추가)
+        if (pressure) {
+            if (direction.magnitude > 0) {
+                pressure.style.opacity = direction.magnitude * 0.3;
+                pressure.style.transform = `scale(${1 + direction.magnitude * 0.2})`;
+            } else {
+                pressure.style.opacity = 0;
+                pressure.style.transform = 'scale(1)';
+            }
+        }
     }
 
-    // 키 입력 상태 업데이트
+    // 개선된 키 입력 상태 업데이트 (아날로그 입력 지원)
     function updateKeys(direction) {
         // 기존 키 상태 초기화
         keys.ArrowUp = false;
@@ -352,26 +390,50 @@ function initMobileControls() {
         keys.ArrowLeft = false;
         keys.ArrowRight = false;
 
-        // 방향에 따른 키 설정
-        if (direction.y < -0.3) keys.ArrowUp = true;
-        if (direction.y > 0.3) keys.ArrowDown = true;
-        if (direction.x < -0.3) keys.ArrowLeft = true;
-        if (direction.x > 0.3) keys.ArrowRight = true;
+        // 데드존 체크
+        if (direction.magnitude < deadZone) {
+            return;
+        }
+
+        // 방향에 따른 키 설정 (더 정밀한 입력)
+        const threshold = 0.3;
+        if (direction.y < -threshold) keys.ArrowUp = true;
+        if (direction.y > threshold) keys.ArrowDown = true;
+        if (direction.x < -threshold) keys.ArrowLeft = true;
+        if (direction.x > threshold) keys.ArrowRight = true;
     }
 
-    // 조이스틱 클래스 업데이트 (시각적 피드백)
+    // 개선된 조이스틱 클래스 업데이트 (8방향 + 대각선)
     function updateJoystickClass(direction) {
         joystick.className = 'joystick-container';
         
-        if (direction.x === 0 && direction.y === 0) return;
+        if (direction.magnitude < deadZone) return;
         
-        if (direction.y < -0.3) joystick.classList.add('up');
-        if (direction.y > 0.3) joystick.classList.add('down');
-        if (direction.x < -0.3) joystick.classList.add('left');
-        if (direction.x > 0.3) joystick.classList.add('right');
+        // 8방향 감지
+        const angle = Math.atan2(direction.y, direction.x) * 180 / Math.PI;
+        const normalizedAngle = (angle + 360) % 360;
+        
+        // 방향별 클래스 추가
+        if (normalizedAngle >= 337.5 || normalizedAngle < 22.5) {
+            joystick.classList.add('right');
+        } else if (normalizedAngle >= 22.5 && normalizedAngle < 67.5) {
+            joystick.classList.add('up-right');
+        } else if (normalizedAngle >= 67.5 && normalizedAngle < 112.5) {
+            joystick.classList.add('up');
+        } else if (normalizedAngle >= 112.5 && normalizedAngle < 157.5) {
+            joystick.classList.add('up-left');
+        } else if (normalizedAngle >= 157.5 && normalizedAngle < 202.5) {
+            joystick.classList.add('left');
+        } else if (normalizedAngle >= 202.5 && normalizedAngle < 247.5) {
+            joystick.classList.add('down-left');
+        } else if (normalizedAngle >= 247.5 && normalizedAngle < 292.5) {
+            joystick.classList.add('down');
+        } else if (normalizedAngle >= 292.5 && normalizedAngle < 337.5) {
+            joystick.classList.add('down-right');
+        }
     }
 
-    // 터치 이벤트
+    // 개선된 터치 이벤트
     function handleTouchStart(e) {
         e.preventDefault();
         isJoystickActive = true;
@@ -386,6 +448,7 @@ function initMobileControls() {
         
         const touch = e.touches[0] || e.changedTouches[0];
         const direction = calculateDirection(touch.clientX, touch.clientY);
+        currentDirection = direction;
         
         updateJoystickStick(direction);
         updateKeys(direction);
@@ -399,16 +462,26 @@ function initMobileControls() {
         
         // 조이스틱 중앙으로 리셋
         const stick = joystick.querySelector('.joystick-stick');
-        stick.style.left = '50%';
-        stick.style.top = '50%';
-        stick.style.transform = 'translate(-50%, -50%)';
+        const pressure = joystick.querySelector('.joystick-pressure');
+        
+        if (stick) {
+            stick.style.left = '50%';
+            stick.style.top = '50%';
+            stick.style.transform = 'translate(-50%, -50%)';
+        }
+        
+        if (pressure) {
+            pressure.style.opacity = '0';
+            pressure.style.transform = 'scale(1)';
+        }
         
         // 키 상태 초기화
-        updateKeys({ x: 0, y: 0 });
-        updateJoystickClass({ x: 0, y: 0 });
+        currentDirection = { x: 0, y: 0, magnitude: 0 };
+        updateKeys(currentDirection);
+        updateJoystickClass(currentDirection);
     }
 
-    // 마우스 이벤트 (데스크톱 테스트용)
+    // 개선된 마우스 이벤트 (데스크톱 테스트용)
     function handleMouseDown(e) {
         e.preventDefault();
         isJoystickActive = true;
@@ -421,6 +494,8 @@ function initMobileControls() {
         e.preventDefault();
         
         const direction = calculateDirection(e.clientX, e.clientY);
+        currentDirection = direction;
+        
         updateJoystickStick(direction);
         updateKeys(direction);
         updateJoystickClass(direction);
@@ -433,13 +508,23 @@ function initMobileControls() {
         
         // 조이스틱 중앙으로 리셋
         const stick = joystick.querySelector('.joystick-stick');
-        stick.style.left = '50%';
-        stick.style.top = '50%';
-        stick.style.transform = 'translate(-50%, -50%)';
+        const pressure = joystick.querySelector('.joystick-pressure');
+        
+        if (stick) {
+            stick.style.left = '50%';
+            stick.style.top = '50%';
+            stick.style.transform = 'translate(-50%, -50%)';
+        }
+        
+        if (pressure) {
+            pressure.style.opacity = '0';
+            pressure.style.transform = 'scale(1)';
+        }
         
         // 키 상태 초기화
-        updateKeys({ x: 0, y: 0 });
-        updateJoystickClass({ x: 0, y: 0 });
+        currentDirection = { x: 0, y: 0, magnitude: 0 };
+        updateKeys(currentDirection);
+        updateJoystickClass(currentDirection);
     }
 
     // 이벤트 리스너 등록
@@ -1012,7 +1097,6 @@ function resetGame() {
     for (let key in keys) { keys[key] = false; }
     // player.size는 resizeCanvas() 후에 재설정되어야 하므로 위에서 처리됨
     updateAllTexts();
-    initMobileControls();
     getRankings();
     spawnEnemy(); // 적 1마리 즉시 생성
     intervalId = setInterval(autoAttack, 400);
