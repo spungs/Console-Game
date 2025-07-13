@@ -798,42 +798,90 @@ async function saveRanking() {
     }
 }
 
+// 랭킹 페이지네이션 및 검색 상태
+let rankingPage = 1;
+let rankingPageSize = 10;
+let rankingTotal = 0;
+let rankingSearch = '';
+
+// 페이지네이션 컨트롤 생성
+function renderRankingPagination() {
+    const pagination = document.getElementById('ranking-pagination');
+    if (!pagination) return;
+    pagination.innerHTML = '';
+    const totalPages = Math.ceil(rankingTotal / rankingPageSize);
+    if (totalPages <= 1) return;
+    
+    // 이전 버튼
+    const prevBtn = document.createElement('button');
+    prevBtn.textContent = '이전';
+    prevBtn.disabled = rankingPage === 1;
+    prevBtn.onclick = () => { rankingPage--; getRankings(); };
+    pagination.appendChild(prevBtn);
+    
+    // 페이지 번호
+    for (let i = 1; i <= totalPages; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.textContent = i;
+        if (i === rankingPage) {
+            pageBtn.style.fontWeight = 'bold';
+            pageBtn.style.background = '#eee';
+        }
+        pageBtn.onclick = () => { rankingPage = i; getRankings(); };
+        pagination.appendChild(pageBtn);
+    }
+    // 다음 버튼
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = '다음';
+    nextBtn.disabled = rankingPage === totalPages;
+    nextBtn.onclick = () => { rankingPage++; getRankings(); };
+    pagination.appendChild(nextBtn);
+}
+
+// 검색 입력 이벤트 등록
+window.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('ranking-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            rankingSearch = e.target.value.trim();
+            rankingPage = 1;
+            getRankings();
+        });
+    }
+});
+
+// 랭킹 불러오기 (SQL 함수 getrankbyplayername 사용, total_count 활용)
 async function getRankings() {
     try {
-        // console.log('getRankings 함수 호출됨');
-        const { data, error } = await supabaseClient
-            .from('rankings')
-            .select('player_name, survival_time, created_at')
-            .order('survival_time', { ascending: false })
-            .limit(10);
-
+        const { data, error } = await supabaseClient.rpc('getrankbyplayername', {
+            search: rankingSearch || '',
+            page: rankingPage,
+            page_size: rankingPageSize
+        });
         if (error) {
             console.error('랭킹 불러오기 실패:', error);
             return;
         }
-
-        // console.log('랭킹 데이터 로드됨:', data);
-
         const rankingList = document.getElementById('ranking-list');
         if (!rankingList) {
-            // console.error('ranking-list 요소를 찾을 수 없습니다.');
             console.error('랭킹 리스트 요소를 찾을 수 없습니다.');
             return;
         }
-        
-        rankingList.innerHTML = ''; // Clear previous list
-        
-        // 최고 기록 업데이트
-        if (data && data.length > 0) {
+        rankingList.innerHTML = '';
+        // 최고 기록 업데이트 (검색이 아닐 때만)
+        if (data && data.length > 0 && !rankingSearch) {
             bestTime = parseFloat(data[0].survival_time);
-            // console.log('최고 기록 업데이트:', bestTime);
             updateChallengeMessage();
         }
-        
+        // total_count로 전체 개수 갱신
+        if (data && data.length > 0 && data[0].total_count !== undefined) {
+            rankingTotal = data[0].total_count;
+        } else {
+            rankingTotal = 0;
+        }
         data.forEach((rank, index) => {
             const li = document.createElement('li');
             const survivalTime = parseFloat(rank.survival_time);
-            // created_at을 UTC yyyy-mm-dd hh:MM:ss로 포맷
             let dateStr = '';
             if (rank.created_at) {
                 const d = new Date(rank.created_at);
@@ -845,12 +893,12 @@ async function getRankings() {
                 const ss = String(d.getUTCSeconds()).padStart(2, '0');
                 dateStr = `(UTC)${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
             }
-            li.innerHTML = `#${index + 1} ${rank.player_name} - ${survivalTime.toFixed(3)}s` +
+            li.innerHTML = `#${rank.rank} ${rank.player_name} - ${survivalTime.toFixed(3)}s` +
                 (dateStr ? `<br><span style='font-size:0.95em;color:#888;'>${dateStr}</span>` : '');
             rankingList.appendChild(li);
         });
+        renderRankingPagination();
     } catch (err) {
-        // console.error('getRankings 함수에서 예외 발생:', err);
         console.error('랭킹 데이터 로드 중 예외 발생:', err);
     }
 }
