@@ -778,6 +778,7 @@ function checkNewRecord() {
 
 // 게임 오버 모달 표시
 function showGameOverModal() {
+    console.log('showGameOverModal 함수 호출됨');
     const modal = document.getElementById('gameOverModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalTime = document.getElementById('modalTime');
@@ -786,6 +787,19 @@ function showGameOverModal() {
     const playerNameInput = document.getElementById('playerNameInput');
     const saveRankingBtn = document.getElementById('saveRankingBtn');
     const closeModalBtn = document.getElementById('closeModalBtn');
+
+    // 모달 요소들이 제대로 찾아지는지 확인
+    if (!modal) {
+        console.error('gameOverModal 요소를 찾을 수 없습니다!');
+        return;
+    }
+    if (!modalTitle) console.error('modalTitle 요소를 찾을 수 없습니다!');
+    if (!modalTime) console.error('modalTime 요소를 찾을 수 없습니다!');
+    if (!modalMessage) console.error('modalMessage 요소를 찾을 수 없습니다!');
+    if (!finalTimeSpan) console.error('finalTime 요소를 찾을 수 없습니다!');
+    if (!playerNameInput) console.error('playerNameInput 요소를 찾을 수 없습니다!');
+    if (!saveRankingBtn) console.error('saveRankingBtn 요소를 찾을 수 없습니다!');
+    if (!closeModalBtn) console.error('closeModalBtn 요소를 찾을 수 없습니다!');
 
     const t = texts[currentLanguage];
 
@@ -820,7 +834,9 @@ function showGameOverModal() {
     playerNameInput.focus();
 
     // 모달 표시
+    console.log('모달을 표시합니다...');
     modal.style.display = 'block';
+    console.log('모달 표시 완료. display:', modal.style.display);
 
     // Enter 키로 저장, Esc 키로 닫기
     playerNameInput.onkeydown = function(e) {
@@ -882,7 +898,11 @@ function retryGame() {
 // 게임 오버 상태에서 Enter/Space 키로도 새로고침
 window.addEventListener('keydown', function(e) {
     if (gameOver && (e.key === 'Enter' || e.key === ' ' || e.code === 'Space')) {
-        window.location.reload();
+        // 모달이 표시되어 있지 않을 때만 새로고침
+        const modal = document.getElementById('gameOverModal');
+        if (modal && modal.style.display !== 'block') {
+            window.location.reload();
+        }
     }
 });
 
@@ -905,22 +925,23 @@ function updateChallengeMessage() {
 }
 
 function gameLoop() {
-    if (gameOver) return;
-    // {
-    //     const t = texts[currentLanguage];
-    //     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    //     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    //     ctx.fillStyle = 'white';
-    //     ctx.font = `${40 * getUIScale()}px Arial`;
-    //     ctx.textAlign = 'center';
-    //     ctx.fillText(t.gameOver.toUpperCase(), canvas.width / 2, canvas.height / 2);
-    //     ctx.font = `${20 * getUIScale()}px Arial`;
-    //     const displayTime = finalGameTime > 0 ? finalGameTime.toFixed(3) : gameTime.toFixed(3);
-    //     ctx.fillText(`${t.survivalTime} ${displayTime}${t.seconds}`, canvas.width / 2, canvas.height / 2 + 40 * getUIScale());
-    //     ctx.font = `${13 * getUIScale()}px Arial`;
-    //     ctx.fillText(t.pressToRetry, canvas.width / 2, canvas.height / 2 + 80 * getUIScale());
-    //     return;
-    // }
+    if (gameOver) {
+        // 게임 오버 시 캔버스에 게임 오버 화면 표시
+        const t = texts[currentLanguage];
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.font = `${40 * getUIScale()}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.fillText(t.gameOver.toUpperCase(), canvas.width / 2, canvas.height / 2);
+        ctx.font = `${20 * getUIScale()}px Arial`;
+        const displayTime = finalGameTime > 0 ? finalGameTime.toFixed(3) : gameTime.toFixed(3);
+        ctx.fillText(`${t.survivalTime} ${displayTime}${t.seconds}`, canvas.width / 2, canvas.height / 2 + 40 * getUIScale());
+        ctx.font = `${13 * getUIScale()}px Arial`;
+        ctx.fillText(t.pressToRetry, canvas.width / 2, canvas.height / 2 + 80 * getUIScale());
+        animationFrameId = requestAnimationFrame(gameLoop);
+        return;
+    }
 
     // 일시정지 상태가 아닐 때만 게임 업데이트
     if (!isPaused) {
