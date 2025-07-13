@@ -105,14 +105,14 @@ document.addEventListener('visibilitychange', function() {
         if (!gameOver && !isPaused) {
             isPaused = true;
             pauseStartTime = Date.now();
-            console.log('게임 일시정지: 탭 비활성화');
+            // console.log('게임 일시정지: 탭 비활성화');
         }
     } else {
         // 탭이 다시 활성화되면 게임 재개
         if (!gameOver && isPaused) {
             isPaused = false;
             totalPauseTime += Date.now() - pauseStartTime;
-            console.log('게임 재개: 탭 활성화');
+            // console.log('게임 재개: 탭 활성화');
         }
     }
 });
@@ -257,7 +257,7 @@ function detectCollisions() {
             player.y + player.size - hitboxPadding > enemy.y
         ) {
             if (!gameOver) {
-                console.log('게임 오버! 충돌 감지됨');
+                // console.log('게임 오버! 충돌 감지됨');
                 gameOver = true;
                 finalGameTime = gameTime; // 현재 시간을 최종 시간으로 저장
                 checkNewRecord();
@@ -310,6 +310,7 @@ function initMobileControls() {
             y: rect.top + rect.height / 2
         };
         joystickRadius = rect.width / 2;
+        // console.log('조이스틱 중심 재계산:', joystickCenter, '반지름:', joystickRadius);
     }
 
     // 조이스틱 방향 계산
@@ -375,6 +376,7 @@ function initMobileControls() {
         e.preventDefault();
         isJoystickActive = true;
         joystick.classList.add('pressed');
+        initJoystick(); // 터치 시작할 때마다 중심 재계산
         handleTouchMove(e);
     }
 
@@ -679,14 +681,14 @@ function updateGameStatus() {
 }
 
 async function saveRanking() {
-    console.log('saveRanking 함수 호출됨, gameTime:', gameTime);
+    // console.log('saveRanking 함수 호출됨, gameTime:', gameTime);
     
     try {
         const playerName = prompt('게임 오버! 랭킹에 등록할 이름을 입력하세요:', 'Player');
-        console.log('입력된 플레이어 이름:', playerName);
+        // console.log('입력된 플레이어 이름:', playerName);
         
         if (playerName && playerName.trim() !== '') {
-            console.log('Supabase에 저장 시도 중...');
+            // console.log('Supabase에 저장 시도 중...');
             const { data, error } = await supabaseClient
                 .from('rankings')
                 .insert({ 
@@ -698,21 +700,22 @@ async function saveRanking() {
                 console.error('랭킹 저장 실패:', error);
                 alert('랭킹 저장에 실패했습니다: ' + error.message);
             } else {
-                console.log('랭킹 저장 성공:', data);
+                // console.log('랭킹 저장 성공:', data);
                 await getRankings();
             }
         } else {
-            console.log('플레이어 이름이 입력되지 않았습니다.');
+            // console.log('플레이어 이름이 입력되지 않았습니다.');
         }
     } catch (err) {
-        console.error('saveRanking 함수에서 예외 발생:', err);
+        // console.error('saveRanking 함수에서 예외 발생:', err);
+        console.error('랭킹 저장 중 예외 발생:', err);
         alert('랭킹 저장 중 오류가 발생했습니다: ' + err.message);
     }
 }
 
 async function getRankings() {
     try {
-        console.log('getRankings 함수 호출됨');
+        // console.log('getRankings 함수 호출됨');
         const { data, error } = await supabaseClient
             .from('rankings')
             .select('player_name, survival_time')
@@ -724,11 +727,12 @@ async function getRankings() {
             return;
         }
 
-        console.log('랭킹 데이터 로드됨:', data);
+        // console.log('랭킹 데이터 로드됨:', data);
 
         const rankingList = document.getElementById('ranking-list');
         if (!rankingList) {
-            console.error('ranking-list 요소를 찾을 수 없습니다.');
+            // console.error('ranking-list 요소를 찾을 수 없습니다.');
+            console.error('랭킹 리스트 요소를 찾을 수 없습니다.');
             return;
         }
         
@@ -737,7 +741,7 @@ async function getRankings() {
         // 최고 기록 업데이트
         if (data && data.length > 0) {
             bestTime = parseFloat(data[0].survival_time);
-            console.log('최고 기록 업데이트:', bestTime);
+            // console.log('최고 기록 업데이트:', bestTime);
             updateChallengeMessage();
         }
         
@@ -748,7 +752,8 @@ async function getRankings() {
             rankingList.appendChild(li);
         });
     } catch (err) {
-        console.error('getRankings 함수에서 예외 발생:', err);
+        // console.error('getRankings 함수에서 예외 발생:', err);
+        console.error('랭킹 데이터 로드 중 예외 발생:', err);
     }
 }
 
@@ -780,12 +785,12 @@ function updateAllTexts() {
 // 신기록 체크
 function checkNewRecord() {
     isNewRecord = finalGameTime > bestTime;
-    console.log('신기록 여부:', isNewRecord, '현재 기록:', finalGameTime, '최고 기록:', bestTime);
+    // console.log('신기록 여부:', isNewRecord, '현재 기록:', finalGameTime, '최고 기록:', bestTime);
 }
 
 // 게임 오버 모달 표시
 function showGameOverModal() {
-    console.log('showGameOverModal 함수 호출됨');
+    // console.log('showGameOverModal 함수 호출됨');
     const modal = document.getElementById('gameOverModal');
     const modalTitle = document.getElementById('modalTitle');
     const modalTime = document.getElementById('modalTime');
@@ -841,9 +846,9 @@ function showGameOverModal() {
     playerNameInput.focus();
 
     // 모달 표시
-    console.log('모달을 표시합니다...');
+    // console.log('모달을 표시합니다...');
     modal.style.display = 'block';
-    console.log('모달 표시 완료. display:', modal.style.display);
+    // console.log('모달 표시 완료. display:', modal.style.display);
 
     // Enter 키로만 저장 (ESC 키 이벤트 제거)
     playerNameInput.onkeydown = function(e) {
@@ -866,7 +871,7 @@ async function saveRankingFromModal() {
     }
 
     try {
-        console.log('모달에서 랭킹 저장 시도:', playerName, finalGameTime);
+        // console.log('모달에서 랭킹 저장 시도:', playerName, finalGameTime);
         const { data, error } = await supabaseClient
             .from('rankings')
             .insert({ 
@@ -878,7 +883,7 @@ async function saveRankingFromModal() {
             console.error('랭킹 저장 실패:', error);
             alert(t.rankingSaveFailed + ' ' + error.message);
         } else {
-            console.log('랭킹 저장 성공:', data);
+            // console.log('랭킹 저장 성공:', data);
             closeGameOverModal();
             await getRankings();
         }
@@ -1022,7 +1027,7 @@ function resetGame() {
 // Give Up 버튼 함수
 function onGiveUp() {
     if (!gameOver) {
-        console.log('Give Up 버튼으로 게임 오버 실행');
+        // console.log('Give Up 버튼으로 게임 오버 실행');
         gameOver = true;
         finalGameTime = gameTime; // 현재 시간을 최종 시간으로 저장
         checkNewRecord();
