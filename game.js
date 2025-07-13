@@ -123,7 +123,7 @@ function getSpeed(baseSpeed = 5) {
 }
 
 function getUIScale() {
-    return canvas.width / 300;
+    return canvas.width / 600;
 }
 
 // 플레이어 설정
@@ -170,7 +170,8 @@ class Enemy {
 
     draw() {
         ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.size, this.size);
+        const scale = getUIScale();
+        ctx.fillRect(this.x, this.y, this.size * scale, this.size * scale);
     }
 }
 
@@ -736,7 +737,8 @@ function updatePlayerPosition() {
 
 function drawPlayer() {
     ctx.fillStyle = player.color;
-    ctx.fillRect(player.x, player.y, player.size, player.size);
+    const scale = getUIScale();
+    ctx.fillRect(player.x, player.y, player.size * scale, player.size * scale);
 }
 
 function drawUI() {
