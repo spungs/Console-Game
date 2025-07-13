@@ -897,12 +897,7 @@ let intervalId = null; // autoAttack setInterval ID
 
 // 게임 재시작
 function retryGame() {
-    const elapsed = (Date.now() - hiddenTimer) / 1000; // 초 단위
-    if (elapsed > 40) {
-        window.location.reload();
-    } else {
-        resetGame();
-    }
+    resetGame();
 }
 
 // 게임 오버 상태에서 Enter/Space 키 이벤트 제거 (모달이 켜져있을 때는 동작하지 않음)
@@ -1040,7 +1035,6 @@ async function initializeGame() {
     resizeCanvas(); // 반응형 크기 적용
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
-    hiddenTimer = Date.now(); // 게임 시작 시 타이머 초기화
     updateAllTexts(); // 초기 텍스트 설정
     initMobileControls(); // 모바일 컨트롤 초기화
     await getRankings();
