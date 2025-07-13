@@ -130,9 +130,7 @@ function getUIScale() {
 let player = {
     x: canvas.width / 2,
     y: canvas.height / 2,
-    // size: 20 * getUIScale(),
     size: 20,
-    // speed: getSpeed(5),
     speed: 5,
     color: 'blue',
     health: 100
@@ -271,15 +269,22 @@ function detectCollisions() {
 
 // 키보드 이벤트 리스너
 window.addEventListener('keydown', (e) => {
-    if (gameOver) {
+    // 게임 오버 모달이 켜져있는지 확인
+    const modal = document.getElementById('gameOverModal');
+    const isModalOpen = modal && modal.style.display === 'block';
+    
+    if (gameOver && !isModalOpen) {
+        // 게임 오버 상태이고 모달이 닫혀있을 때만 Enter/Space 키 동작
         if (e.key === 'Enter' || e.key === ' ') {
             resetGame();
         }
-    } else {
+    } else if (!gameOver) {
+        // 게임 진행 중일 때만 방향키 동작
         if (keys.hasOwnProperty(e.key)) {
             keys[e.key] = true;
         }
     }
+    // 모달이 켜져있을 때는 Enter/Space 키 이벤트 무시
 });
 
 window.addEventListener('keyup', (e) => {
@@ -840,12 +845,10 @@ function showGameOverModal() {
     modal.style.display = 'block';
     console.log('모달 표시 완료. display:', modal.style.display);
 
-    // Enter 키로 저장, Esc 키로 닫기
+    // Enter 키로만 저장 (ESC 키 이벤트 제거)
     playerNameInput.onkeydown = function(e) {
         if (e.key === 'Enter') {
             saveRankingFromModal();
-        } else if (e.key === 'Escape') {
-            closeGameOverModal();
         }
     };
 }
@@ -897,16 +900,7 @@ function retryGame() {
     }
 }
 
-// 게임 오버 상태에서 Enter/Space 키로도 새로고침
-window.addEventListener('keydown', function(e) {
-    if (gameOver && (e.key === 'Enter' || e.key === ' ' || e.code === 'Space')) {
-        // 모달이 표시되어 있지 않을 때만 새로고침
-        const modal = document.getElementById('gameOverModal');
-        if (modal && modal.style.display !== 'block') {
-            window.location.reload();
-        }
-    }
-});
+// 게임 오버 상태에서 Enter/Space 키 이벤트 제거 (모달이 켜져있을 때는 동작하지 않음)
 
 // 게임 오버 모달 닫기
 function closeGameOverModal() {
@@ -1009,9 +1003,7 @@ function resetGame() {
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
     player.health = 100;
-    // player.size = 20 * getUIScale();
     player.size = 20;
-    // player.speed = getSpeed(5);
     player.speed = 5;
     enemies.length = 0;
     projectiles.length = 0;
