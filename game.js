@@ -57,7 +57,9 @@ const texts = {
         difficulty: 'Difficulty:',
         time: 'Time:',
         challengeTemplate: 'Try to exceed the record of <span style="color:green">{time}</span> seconds.',
-        giveUpBtn: 'Give Up'
+        giveUpBtn: 'Give Up',
+        joystickOn: 'Joystick On',
+        joystickOff: 'Joystick Off'
     },
     ko: {
         gameTitle: '닷지 마스터',
@@ -83,7 +85,9 @@ const texts = {
         difficulty: '난이도:',
         time: '시간:',
         challengeTemplate: '최고 기록 <span style="color:green">{time}</span>초를 넘겨보세요!',
-        giveUpBtn: '포기하기'
+        giveUpBtn: '포기하기',
+        joystickOn: '조이스틱 켜짐',
+        joystickOff: '조이스틱 꺼짐'
     }
 };
 
@@ -941,6 +945,12 @@ function updateAllTexts() {
     document.getElementById('giveup-btn').textContent = t.giveUpBtn;
     document.getElementById('retry-btn').textContent = t.retry;
     
+    // 조이스틱 토글 라벨 업데이트
+    const joystickLabel = document.getElementById('joystick-toggle-label');
+    if (joystickLabel) {
+        joystickLabel.textContent = joystickVisible ? t.joystickOn : t.joystickOff;
+    }
+    
     // 도전 메시지 업데이트
     updateChallengeMessage();
 }
@@ -1091,13 +1101,13 @@ function gameLoop() {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'white';
-        ctx.font = `${40 * getUIScale()}px Arial`;
+        ctx.font = `${60 * getUIScale()}px Arial`;
         ctx.textAlign = 'center';
         ctx.fillText(t.gameOver.toUpperCase(), canvas.width / 2, canvas.height / 2);
-        ctx.font = `${20 * getUIScale()}px Arial`;
+        ctx.font = `${30 * getUIScale()}px Arial`;
         const displayTime = finalGameTime > 0 ? finalGameTime.toFixed(3) : gameTime.toFixed(3);
         ctx.fillText(`${t.survivalTime} ${displayTime}${t.seconds}`, canvas.width / 2, canvas.height / 2 + 40 * getUIScale());
-        ctx.font = `${13 * getUIScale()}px Arial`;
+        ctx.font = `${20 * getUIScale()}px Arial`;
         ctx.fillText(t.pressToRetry, canvas.width / 2, canvas.height / 2 + 80 * getUIScale());
         animationFrameId = requestAnimationFrame(gameLoop);
         return;
@@ -1236,7 +1246,8 @@ function toggleJoystickSwitch() {
         joystick.style.display = checked ? 'block' : 'none';
     }
     if (label) {
-        label.textContent = checked ? '조이스틱 켜짐' : '조이스틱 꺼짐';
+        const t = texts[currentLanguage];
+        label.textContent = checked ? t.joystickOn : t.joystickOff;
     }
 }
 
@@ -1264,7 +1275,8 @@ window.addEventListener('DOMContentLoaded', () => {
         toggle.checked = joystickVisible;
     }
     if (label) {
-        label.textContent = joystickVisible ? '조이스틱 켜짐' : '조이스틱 꺼짐';
+        const t = texts[currentLanguage];
+        label.textContent = joystickVisible ? t.joystickOn : t.joystickOff;
     }
 });
 
