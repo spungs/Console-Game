@@ -950,15 +950,26 @@ function initializeCountrySelect() {
     
     // 국가 선택 이벤트
     countrySelect.addEventListener('change', function() {
-        selectedCountryCode = this.value;
-        localStorage.setItem('selectedCountry', selectedCountryCode);
+        if (this.value) {
+            selectedCountryCode = this.value;
+            localStorage.setItem('selectedCountry', selectedCountryCode);
+        }
     });
     
+    // 보조: select가 blur될 때도 저장 시도
+    countrySelect.addEventListener('blur', function() {
+        if (this.value) {
+            selectedCountryCode = this.value;
+            localStorage.setItem('selectedCountry', selectedCountryCode);
+        }
+    });
     // 이전에 선택한 국가가 있으면 선택
     const savedCountry = localStorage.getItem('selectedCountry');
     if (savedCountry) {
         selectedCountryCode = savedCountry;
         countrySelect.value = savedCountry;
+    } else {
+        countrySelect.selectedIndex = 0; // 더미 옵션이 선택되도록
     }
 }
 
@@ -968,8 +979,14 @@ function loadCountryOptions() {
     if (!countrySelect) return;
     
     countrySelect.innerHTML = '';
+    // 더미 옵션 추가
+    const dummyOption = document.createElement('option');
+    dummyOption.value = '';
+    dummyOption.textContent = '국가를 선택하세요';
+    dummyOption.disabled = true;
+    countrySelect.appendChild(dummyOption);
+
     const sortedCountries = getSortedCountries(currentLanguage);
-    
     sortedCountries.forEach(country => {
         const option = document.createElement('option');
         option.value = country.code;
@@ -982,21 +999,29 @@ function loadCountryOptions() {
 function filterCountries(searchTerm) {
     const countrySelect = document.getElementById('countrySelect');
     if (!countrySelect) return;
-    
+
     const options = countrySelect.options;
     const searchLower = searchTerm.toLowerCase();
-    
+
     for (let i = 0; i < options.length; i++) {
         const option = options[i];
-        const text = option.textContent.toLowerCase();
+        // 더미 옵션(선택하세요)은 항상 표시
+        if (option.value === '') {
+            option.style.display = '';
+            continue;
+        }
         const country = findCountryByCode(option.value);
-        
+        if (!country) {
+            option.style.display = 'none';
+            continue;
+        }
+        const text = option.textContent.toLowerCase();
         // code, name, nameKo로 검색
-        const matches = text.includes(searchLower) || 
-                       country.code.toLowerCase().includes(searchLower) ||
-                       country.name.toLowerCase().includes(searchLower) ||
-                       country.nameKo.includes(searchTerm);
-        
+        const matches = text.includes(searchLower) ||
+            country.code.toLowerCase().includes(searchLower) ||
+            country.name.toLowerCase().includes(searchLower) ||
+            country.nameKo.includes(searchTerm);
+
         option.style.display = matches ? '' : 'none';
     }
 }
