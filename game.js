@@ -925,67 +925,12 @@ function retryGame() {
     resetGame();
 }
 
-// 국가 선택 초기화
-function initializeCountrySelect() {
-    const countrySelect = document.getElementById('countrySelect');
-    const countrySearchInput = document.getElementById('countrySearchInput');
-    const countrySelectLabel = document.getElementById('countrySelectLabel');
-    
-    if (!countrySelect || !countrySearchInput || !countrySelectLabel) {
-        console.error('국가 선택 요소를 찾을 수 없습니다!');
-        return;
-    }
-    
-    const t = texts[currentLanguage];
-    countrySelectLabel.textContent = t.countryLabel;
-    countrySearchInput.placeholder = t.countrySearchPlaceholder;
-    
-    // 국가 목록 로드
-    loadCountryOptions();
-    
-    // 검색 기능
-    countrySearchInput.addEventListener('input', function() {
-        filterCountries(this.value);
-    });
-    
-    // 국가 선택 이벤트
-    countrySelect.addEventListener('change', function() {
-        if (this.value) {
-            selectedCountryCode = this.value;
-            localStorage.setItem('selectedCountry', selectedCountryCode);
-        }
-    });
-    
-    // 보조: select가 blur될 때도 저장 시도
-    countrySelect.addEventListener('blur', function() {
-        if (this.value) {
-            selectedCountryCode = this.value;
-            localStorage.setItem('selectedCountry', selectedCountryCode);
-        }
-    });
-    // 이전에 선택한 국가가 있으면 선택
-    const savedCountry = localStorage.getItem('selectedCountry');
-    if (savedCountry) {
-        selectedCountryCode = savedCountry;
-        countrySelect.value = savedCountry;
-    } else {
-        countrySelect.selectedIndex = 0; // 더미 옵션이 선택되도록
-    }
-}
+let countryChoices = null;
 
-// 국가 옵션 로드
 function loadCountryOptions() {
     const countrySelect = document.getElementById('countrySelect');
     if (!countrySelect) return;
-    
     countrySelect.innerHTML = '';
-    // 더미 옵션 추가
-    const dummyOption = document.createElement('option');
-    dummyOption.value = '';
-    dummyOption.textContent = '국가를 선택하세요';
-    dummyOption.disabled = true;
-    countrySelect.appendChild(dummyOption);
-
     const sortedCountries = getSortedCountries(currentLanguage);
     sortedCountries.forEach(country => {
         const option = document.createElement('option');
@@ -995,34 +940,42 @@ function loadCountryOptions() {
     });
 }
 
-// 국가 검색 필터링
-function filterCountries(searchTerm) {
+function initializeCountrySelect() {
     const countrySelect = document.getElementById('countrySelect');
-    if (!countrySelect) return;
-
-    const options = countrySelect.options;
-    const searchLower = searchTerm.toLowerCase();
-
-    for (let i = 0; i < options.length; i++) {
-        const option = options[i];
-        // 더미 옵션(선택하세요)은 항상 표시
-        if (option.value === '') {
-            option.style.display = '';
-            continue;
-        }
-        const country = findCountryByCode(option.value);
-        if (!country) {
-            option.style.display = 'none';
-            continue;
-        }
-        const text = option.textContent.toLowerCase();
-        // code, name, nameKo로 검색
-        const matches = text.includes(searchLower) ||
-            country.code.toLowerCase().includes(searchLower) ||
-            country.name.toLowerCase().includes(searchLower) ||
-            country.nameKo.includes(searchTerm);
-
-        option.style.display = matches ? '' : 'none';
+    const countrySelectLabel = document.getElementById('countrySelectLabel');
+    if (!countrySelect || !countrySelectLabel) {
+        console.error('국가 선택 요소를 찾을 수 없습니다!');
+        return;
+    }
+    const t = texts[currentLanguage];
+    countrySelectLabel.textContent = t.countryLabel;
+    loadCountryOptions();
+    // Choices 인스턴스 생성(이미 있으면 destroy)
+    if (countryChoices) {
+        countryChoices.destroy();
+    }
+    countryChoices = new Choices(countrySelect, {
+        searchEnabled: true,
+        shouldSort: true,
+        itemSelectText: '',
+        placeholder: true,
+        placeholderValue: t.countryLabel,
+        searchPlaceholderValue: t.countrySearchPlaceholder,
+        allowHTML: false
+    });
+    // 선택 이벤트 동기화
+    countrySelect.removeEventListener('change', countrySelect._choicesChangeHandler);
+    countrySelect._choicesChangeHandler = function() {
+        selectedCountryCode = this.value;
+        localStorage.setItem('selectedCountry', selectedCountryCode);
+    };
+    countrySelect.addEventListener('change', countrySelect._choicesChangeHandler);
+    // 이전에 선택한 국가가 있으면 선택
+    const savedCountry = localStorage.getItem('selectedCountry');
+    if (savedCountry) {
+        selectedCountryCode = savedCountry;
+        countrySelect.value = savedCountry;
+        countryChoices.setChoiceByValue(savedCountry);
     }
 }
 

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dodge Master</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6002876774605337" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -66,7 +67,6 @@
             <div class="country-select-container">
                 <label for="countrySelect" id="countrySelectLabel">Country:</label>
                 <div class="select-wrapper">
-                    <input type="text" id="countrySearchInput" placeholder="Search country..." autocomplete="off">
                     <select id="countrySelect" size="8">
                         <!-- 국가 옵션들이 여기에 동적으로 추가됩니다 -->
                     </select>
@@ -79,6 +79,7 @@
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
     <script src="country-list.js"></script>
     <script src="game.js"></script>
 </body>

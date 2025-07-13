@@ -459,22 +459,6 @@ body {
     width: 100%;
 }
 
-#countrySearchInput {
-    width: 100%;
-    padding: 10px;
-    border: 2px solid #ddd;
-    border-radius: 5px;
-    font-size: 14px;
-    box-sizing: border-box;
-    margin-bottom: 5px;
-}
-
-#countrySearchInput:focus {
-    outline: none;
-    border-color: #4a90e2;
-    box-shadow: 0 0 5px rgba(74, 144, 226, 0.3);
-}
-
 #countrySelect {
     width: 100%;
     border: 2px solid #ddd;
