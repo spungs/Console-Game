@@ -853,6 +853,26 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // 랭킹 불러오기 (SQL 함수 getrankbyplayername 사용, total_count 활용)
+async function getBestRecord() {
+    try {
+        const { data, error } = await supabaseClient.rpc('getrankbyplayername', {
+            search: '',
+            page: 1,
+            page_size: 1
+        });
+        if (error) {
+            console.error('최고기록 불러오기 실패:', error);
+            return;
+        }
+        if (data && data.length > 0) {
+            bestTime = parseFloat(data[0].survival_time);
+            updateChallengeMessage();
+        }
+    } catch (err) {
+        console.error('최고기록 로드 중 예외 발생:', err);
+    }
+}
+
 async function getRankings() {
     try {
         const { data, error } = await supabaseClient.rpc('getrankbyplayername', {
@@ -870,11 +890,6 @@ async function getRankings() {
             return;
         }
         rankingList.innerHTML = '';
-        // 최고 기록 업데이트 (검색이 아닐 때만)
-        if (data && data.length > 0 && !rankingSearch) {
-            bestTime = parseFloat(data[0].survival_time);
-            updateChallengeMessage();
-        }
         // total_count로 전체 개수 갱신
         if (data && data.length > 0 && data[0].total_count !== undefined) {
             rankingTotal = data[0].total_count;
@@ -1033,6 +1048,7 @@ async function saveRankingFromModal() {
         } else {
             // console.log('랭킹 저장 성공:', data);
             closeGameOverModal();
+            await getBestRecord(); // 최고기록 먼저 업데이트
             await getRankings();
         }
     } catch (err) {
@@ -1160,6 +1176,7 @@ function resetGame() {
     for (let key in keys) { keys[key] = false; }
     // player.size는 resizeCanvas() 후에 재설정되어야 하므로 위에서 처리됨
     updateAllTexts();
+    getBestRecord(); // 최고기록 먼저 로드
     getRankings();
     spawnEnemy(); // 적 1마리 즉시 생성
     intervalId = setInterval(autoAttack, 400);
@@ -1184,6 +1201,7 @@ async function initializeGame() {
     player.y = canvas.height / 2;
     updateAllTexts(); // 초기 텍스트 설정
     initMobileControls(); // 모바일 컨트롤 초기화
+    await getBestRecord(); // 최고기록 먼저 로드
     await getRankings();
     // autoAttack 중복 방지
     if (intervalId) {
