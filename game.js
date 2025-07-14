@@ -160,45 +160,16 @@ const keys = {
 };
 
 // 적, 투사체 배열
-const enemies = [];
 const projectiles = [];
 
-// 적 생성 관련
-let spawnInterval = 1000; // 초기 생성 간격 (ms)
-let lastSpawnTime = 0;
-
-// 적 클래스
-class Enemy {
-    constructor(x, y, size, speed, color) {
-        this.x = x;
-        this.y = y;
-        this.size = size;
-        this.speed = speed;
-        this.color = color;
-    }
-
-    update() {
-        const angle = Math.atan2(player.y - this.y, player.x - this.x);
-        this.x += Math.cos(angle) * this.speed;
-        this.y += Math.sin(angle) * this.speed;
-    }
-
-    draw() {
-        ctx.fillStyle = this.color;
-        const scale = getUIScale();
-        ctx.fillRect(this.x, this.y, this.size * scale, this.size * scale);
-    }
-}
-
-// 투사체 클래스
+// 투사체 클래스 (이제 target이 아니라 angle을 받음)
 class Projectile {
-    constructor(x, y, size, speed, color, target) {
+    constructor(x, y, size, speed, color, angle) {
         this.x = x;
         this.y = y;
         this.size = size;
         this.speed = speed;
         this.color = color;
-        const angle = Math.atan2(target.y - y, target.x - x);
         this.velocityX = Math.cos(angle) * speed;
         this.velocityY = Math.sin(angle) * speed;
     }
@@ -216,66 +187,152 @@ class Projectile {
     }
 }
 
-// 적 생성 함수
-function spawnEnemy() {
-    const size = (Math.random() * 10 + 10) * getUIScale(); // 10-20 비율 보정
-    const speed = (Math.random() * 1 + 2.5 + (level - 1) * 0.1) * (canvas.width / 600);
-    const color = 'red';
+// 파란색 멈췄다 가는 총알 배열
+const blueProjectiles = [];
 
-    let x, y;
-    if (Math.random() < 0.5) {
-        x = Math.random() < 0.5 ? 0 - size : canvas.width + size;
-        y = Math.random() * canvas.height;
-    } else {
-        x = Math.random() * canvas.width;
-        y = Math.random() < 0.5 ? 0 - size : canvas.height + size;
+// 파란색 멈췄다 가는 총알 클래스
+class BlueProjectile {
+    constructor(x, y, size, speed, color, angle) {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.speed = speed;
+        this.color = color;
+        this.angle = angle;
+        this.velocityX = Math.cos(angle) * speed;
+        this.velocityY = Math.sin(angle) * speed;
+        this.pauseTime = 0.7; // 멈추는 시간(초)
+        this.pauseTimer = 0;
+        this.state = 'moving'; // 'moving' 또는 'paused'
+        this.moveTime = Math.random() * 1.5 + 0.7; // 0.7~2.2초 후 멈춤
+        this.moveTimer = 0;
     }
-
-    enemies.push(new Enemy(x, y, size, speed, color));
-}
-
-// 자동 공격 함수
-function autoAttack() {
-    if (enemies.length > 0) {
-        const target = enemies.reduce((prev, curr) => {
-            const prevDist = Math.hypot(player.x - prev.x, player.y - prev.y);
-            const currDist = Math.hypot(player.x - curr.x, player.y - curr.y);
-            return prevDist < currDist ? prev : curr;
-        });
-
-        projectiles.push(new Projectile(player.x, player.y, 5, 8, 'green', target));
-    }
-}
-
-// 충돌 감지 함수
-function detectCollisions() {
-    // 투사체와 적 충돌
-    for (let i = projectiles.length - 1; i >= 0; i--) {
-        for (let j = enemies.length - 1; j >= 0; j--) {
-            if (projectiles[i] && enemies[j]) {
-                const dist = Math.hypot(projectiles[i].x - enemies[j].x, projectiles[i].y - enemies[j].y);
-                if (dist - enemies[j].size - projectiles[i].size < 1) {
-                    enemies.splice(j, 1);
-                    projectiles.splice(i, 1);
-                }
+    update(dt) {
+        if (this.state === 'moving') {
+            this.x += this.velocityX * dt;
+            this.y += this.velocityY * dt;
+            this.moveTimer += dt;
+            if (this.moveTimer > this.moveTime) {
+                this.state = 'paused';
+                this.pauseTimer = 0;
+            }
+        } else if (this.state === 'paused') {
+            this.pauseTimer += dt;
+            if (this.pauseTimer > this.pauseTime) {
+                this.state = 'moving';
+                this.moveTimer = 0;
             }
         }
     }
+    draw() {
+        ctx.save();
+        ctx.globalAlpha = this.state === 'paused' ? 0.5 : 1;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
 
-    // 플레이어와 적 충돌
-    const hitboxPadding = 5; // 이 값을 조절하여 충돌 민감도를 변경하세요. (클수록 판정이 둔감해집니다)
-    for (let i = enemies.length - 1; i >= 0; i--) {
-        const enemy = enemies[i];
+// 총알 생성 함수: 캔버스 밖에서 랜덤 방향으로 총알 생성
+function spawnBullet() {
+    // 총알이 생성될 방향(상, 하, 좌, 우 중 하나)
+    const side = Math.floor(Math.random() * 4); // 0:상, 1:하, 2:좌, 3:우
+    let x, y, angle;
+    const size = 7;
+    const speed = 2 + Math.random(); // 2~3 사이의 느린 속도
+    // 플레이어 중심 좌표
+    const px = player.x + player.size / 2;
+    const py = player.y + player.size / 2;
+    if (side === 0) { // 위
+        x = Math.random() * canvas.width;
+        y = -size;
+        angle = Math.atan2(py - y, px - x);
+    } else if (side === 1) { // 아래
+        x = Math.random() * canvas.width;
+        y = canvas.height + size;
+        angle = Math.atan2(py - y, px - x);
+    } else if (side === 2) { // 왼쪽
+        x = -size;
+        y = Math.random() * canvas.height;
+        angle = Math.atan2(py - y, px - x);
+    } else { // 오른쪽
+        x = canvas.width + size;
+        y = Math.random() * canvas.height;
+        angle = Math.atan2(py - y, px - x);
+    }
+    projectiles.push(new Projectile(x, y, size, speed, 'green', angle));
+}
+
+// 60초 이후 파란색 총알 생성 함수
+function spawnBlueBullet() {
+    // 기존과 동일하게 랜덤 방향에서 생성
+    const side = Math.floor(Math.random() * 4);
+    let x, y, angle;
+    const size = 8;
+    const speed = 150 + Math.random(); // 3.5~4.5로 더 빠르게
+    const px = player.x + player.size / 2;
+    const py = player.y + player.size / 2;
+    if (side === 0) {
+        x = Math.random() * canvas.width;
+        y = -size;
+        angle = Math.atan2(py - y, px - x);
+    } else if (side === 1) {
+        x = Math.random() * canvas.width;
+        y = canvas.height + size;
+        angle = Math.atan2(py - y, px - x);
+    } else if (side === 2) {
+        x = -size;
+        y = Math.random() * canvas.height;
+        angle = Math.atan2(py - y, px - x);
+    } else {
+        x = canvas.width + size;
+        y = Math.random() * canvas.height;
+        angle = Math.atan2(py - y, px - x);
+    }
+    blueProjectiles.push(new BlueProjectile(x, y, size, speed, 'blue', angle));
+}
+
+// 충돌 감지 함수 (플레이어와 총알 충돌만 체크)
+function detectCollisions() {
+    // 플레이어와 총알 충돌 (보수적으로: hitbox에 padding 적용)
+    const hitboxPadding = 2; // 값이 클수록 판정이 느슨해짐
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+        const projectile = projectiles[i];
         if (
-            player.x + hitboxPadding < enemy.x + enemy.size &&
-            player.x + player.size - hitboxPadding > enemy.x &&
-            player.y + hitboxPadding < enemy.y + enemy.size &&
-            player.y + player.size - hitboxPadding > enemy.y
+            player.x + hitboxPadding < projectile.x + projectile.size - hitboxPadding &&
+            player.x + player.size - hitboxPadding > projectile.x - projectile.size + hitboxPadding &&
+            player.y + hitboxPadding < projectile.y + projectile.size - hitboxPadding &&
+            player.y + player.size - hitboxPadding > projectile.y - projectile.size + hitboxPadding
         ) {
             if (!gameOver) {
-                // console.log('게임 오버! 충돌 감지됨');
                 gameOver = true;
-                finalGameTime = gameTime; // 현재 시간을 최종 시간으로 저장
+                finalGameTime = gameTime;
+                checkNewRecord();
+                showGameOverModal();
+            }
+        }
+        // 총알이 화면 밖으로 나가면 제거
+        if (
+            projectile.x < -projectile.size || projectile.x > canvas.width + projectile.size ||
+            projectile.y < -projectile.size || projectile.y > canvas.height + projectile.size
+        ) {
+            projectiles.splice(i, 1);
+        }
+    }
+    // 파란색 총알 충돌 체크
+    for (let i = blueProjectiles.length - 1; i >= 0; i--) {
+        const projectile = blueProjectiles[i];
+        if (
+            player.x + hitboxPadding < projectile.x + projectile.size - hitboxPadding &&
+            player.x + player.size - hitboxPadding > projectile.x - projectile.size + hitboxPadding &&
+            player.y + hitboxPadding < projectile.y + projectile.size - hitboxPadding &&
+            player.y + player.size - hitboxPadding > projectile.y - projectile.size + hitboxPadding
+        ) {
+            if (!gameOver) {
+                gameOver = true;
+                finalGameTime = gameTime;
                 checkNewRecord();
                 showGameOverModal();
             }
@@ -583,9 +640,41 @@ function updatePlayerPosition() {
 }
 
 function drawPlayer() {
-    ctx.fillStyle = player.color;
     const scale = getUIScale();
-    ctx.fillRect(player.x, player.y, player.size * scale, player.size * scale);
+    const x = player.x;
+    const y = player.y;
+    const size = player.size * scale;
+    // 그림자
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 10 * scale;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 2 * scale;
+    // 노란색 원 내부
+    ctx.beginPath();
+    ctx.arc(x + size/2, y + size/2, size/2, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffe066'; // 밝은 노랑
+    ctx.fill();
+    // 주황색 테두리
+    ctx.lineWidth = 4 * scale;
+    ctx.strokeStyle = '#ff8800';
+    ctx.stroke();
+    // 중앙에 별무늬
+    ctx.save();
+    ctx.translate(x + size/2, y + size/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+        ctx.lineTo(Math.cos((18 + i * 72) * Math.PI/180) * size/4, Math.sin((18 + i * 72) * Math.PI/180) * size/4);
+        ctx.lineTo(Math.cos((54 + i * 72) * Math.PI/180) * size/8, Math.sin((54 + i * 72) * Math.PI/180) * size/8);
+    }
+    ctx.closePath();
+    ctx.fillStyle = '#fff200'; // 진한 노랑
+    ctx.shadowColor = 'rgba(255, 200, 0, 0.5)';
+    ctx.shadowBlur = 8 * scale;
+    ctx.fill();
+    ctx.restore();
+    ctx.restore();
 }
 
 // 타이머 갱신 함수
@@ -605,7 +694,7 @@ function updateGameStatus() {
     gameTime = actualPlayTime / 1000; // 밀리초 단위까지 포함
     
     level = Math.floor(gameTime / 10) + 1;
-    spawnInterval = Math.max(200, 400 - (level - 1) * 50);
+    bulletInterval = Math.max(200, 400 - (level - 1) * 50); // 총알 생성 간격 조정
 }
 
 // 랭킹 페이지네이션 및 검색 상태
@@ -996,6 +1085,16 @@ function updateChallengeMessage() {
     }
 }
 
+// 게임 루프에서 일정 간격으로 spawnBullet 호출
+let bulletInterval = 1000; // 총알 생성 간격(ms)
+let lastBulletTime = 0;
+
+// 10초마다 총알 추가를 위한 변수
+let lastMultiBulletTime = 0;
+
+// gameLoop 내에서 60초 이후 5초마다 파란색 총알 생성
+let lastBlueBulletTime = 0;
+
 function gameLoop() {
     if (gameOver) {
         // 게임 오버 시 캔버스에 게임 오버 화면 표시
@@ -1022,15 +1121,63 @@ function gameLoop() {
         updatePlayerPosition();
         drawPlayer();
 
-        if (Date.now() - lastSpawnTime > spawnInterval) {
-            spawnEnemy();
-            lastSpawnTime = Date.now();
+        // 총알 생성
+        if (Date.now() - lastBulletTime > bulletInterval) {
+            spawnBullet();
+            lastBulletTime = Date.now();
         }
 
-        enemies.forEach(enemy => {
-            enemy.update();
-            enemy.draw();
-        });
+        // 10초마다 빨간색 빠른 총알 여러 개 추가 (5개부터 시작, 10초마다 1개씩 증가)
+        const multiBulletCount = 5 + Math.floor(gameTime / 10);
+        if (gameTime - lastMultiBulletTime >= 10) {
+            for (let i = 0; i < multiBulletCount; i++) {
+                // 빨간색, 빠른 속도(4~5)
+                const side = Math.floor(Math.random() * 4);
+                let x, y, angle;
+                const size = 7;
+                const speed = 3 + Math.random(); // 3~4 사이 빠른 속도
+                const px = player.x + player.size / 2;
+                const py = player.y + player.size / 2;
+                if (side === 0) { // 위
+                    x = Math.random() * canvas.width;
+                    y = -size;
+                    angle = Math.atan2(py - y, px - x);
+                } else if (side === 1) { // 아래
+                    x = Math.random() * canvas.width;
+                    y = canvas.height + size;
+                    angle = Math.atan2(py - y, px - x);
+                } else if (side === 2) { // 왼쪽
+                    x = -size;
+                    y = Math.random() * canvas.height;
+                    angle = Math.atan2(py - y, px - x);
+                } else { // 오른쪽
+                    x = canvas.width + size;
+                    y = Math.random() * canvas.height;
+                    angle = Math.atan2(py - y, px - x);
+                }
+                projectiles.push(new Projectile(x, y, size, speed, 'red', angle));
+            }
+            lastMultiBulletTime += 10;
+        }
+
+        // 60초 이후 파란색 총알 생성
+        if (gameTime > 60 && Date.now() - lastBlueBulletTime > 5000) {
+            spawnBlueBullet();
+            lastBlueBulletTime = Date.now();
+        }
+        // 파란색 총알 업데이트 및 그리기
+        const dt = 1/60; // 프레임 시간(초)
+        for (let i = blueProjectiles.length - 1; i >= 0; i--) {
+            blueProjectiles[i].update(dt);
+            blueProjectiles[i].draw();
+            // 화면 밖으로 나가면 제거
+            if (
+                blueProjectiles[i].x < -blueProjectiles[i].size || blueProjectiles[i].x > canvas.width + blueProjectiles[i].size ||
+                blueProjectiles[i].y < -blueProjectiles[i].size || blueProjectiles[i].y > canvas.height + blueProjectiles[i].size
+            ) {
+                blueProjectiles.splice(i, 1);
+            }
+        }
 
         projectiles.forEach(projectile => {
             projectile.update();
@@ -1055,18 +1202,13 @@ function gameLoop() {
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
+// resetGame, initializeGame에서 enemies, spawnEnemy, intervalId 등 관련 코드 제거 및 lastBulletTime 초기화
 function resetGame() {
-    // 기존 루프와 타이머 정리
     if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
     }
-    if (intervalId) {
-        clearInterval(intervalId);
-    }
     // 캔버스 크기 조정
     resizeCanvas();
-
-    // 이제 진짜 초기화
     gameOver = false;
     level = 1;
     gameTime = 0;
@@ -1081,17 +1223,14 @@ function resetGame() {
     player.health = 100;
     player.size = 20;
     player.speed = 5;
-    enemies.length = 0;
     projectiles.length = 0;
-    spawnInterval = 1000;
-    lastSpawnTime = 0;
-    for (let key in keys) { keys[key] = false; }
-    // player.size는 resizeCanvas() 후에 재설정되어야 하므로 위에서 처리됨
+    lastBulletTime = Date.now();
+    lastMultiBulletTime = 0;
+    blueProjectiles.length = 0;
+    lastBlueBulletTime = 0;
     updateAllTexts();
-    getBestRecord(); // 최고기록 먼저 로드
+    getBestRecord();
     getRankings();
-    spawnEnemy(); // 적 1마리 즉시 생성
-    intervalId = setInterval(autoAttack, 400);
     gameLoop();
 }
 
@@ -1116,11 +1255,10 @@ async function initializeGame() {
     initializeCountrySelect(); // 국가 선택 초기화
     await getBestRecord(); // 최고기록 먼저 로드
     await getRankings();
-    // autoAttack 중복 방지
-    if (intervalId) {
-        clearInterval(intervalId);
-    }
-    intervalId = setInterval(autoAttack, 400);
+    lastBulletTime = Date.now();
+    lastMultiBulletTime = 0;
+    blueProjectiles.length = 0;
+    lastBlueBulletTime = 0;
     gameLoop();
 }
 
