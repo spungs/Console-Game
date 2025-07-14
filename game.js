@@ -132,9 +132,16 @@ document.addEventListener('visibilitychange', function() {
     }
 });
 
+// 모바일 환경 감지 함수
+function isMobile() {
+    return window.innerWidth <= 768;
+}
+
+// getSpeed 함수에 모바일 감속 적용
 function getSpeed(baseSpeed = 5) {
-    // 기준: 데스크톱 600px 기준
-    return baseSpeed * (canvas.width / 300);
+    let speed = baseSpeed * (canvas.width / 300);
+    if (isMobile()) speed *= 0.3;
+    return speed;
 }
 
 function getUIScale() {
@@ -180,9 +187,10 @@ class Projectile {
     }
 
     draw() {
+        const scale = getUIScale();
         ctx.fillStyle = this.color;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, this.size * scale, 0, Math.PI * 2);
         ctx.fill();
     }
 }
@@ -225,11 +233,12 @@ class BlueProjectile {
         }
     }
     draw() {
+        const scale = getUIScale();
         ctx.save();
         ctx.globalAlpha = this.state === 'paused' ? 0.5 : 1;
         ctx.fillStyle = this.color;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, this.size * scale, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
     }
@@ -237,11 +246,13 @@ class BlueProjectile {
 
 // 총알 생성 함수: 캔버스 밖에서 랜덤 방향으로 총알 생성
 function spawnBullet() {
+    const scale = getUIScale();
     // 총알이 생성될 방향(상, 하, 좌, 우 중 하나)
     const side = Math.floor(Math.random() * 4); // 0:상, 1:하, 2:좌, 3:우
     let x, y, angle;
-    const size = 7;
-    const speed = 2 + Math.random(); // 2~3 사이의 느린 속도
+    const size = isMobile() ? 14 * scale : 7 * scale;
+    let speed = 2 + Math.random(); // 2~3 사이의 느린 속도
+    if (isMobile()) speed *= 0.7;
     // 플레이어 중심 좌표
     const px = player.x + player.size / 2;
     const py = player.y + player.size / 2;
@@ -267,11 +278,13 @@ function spawnBullet() {
 
 // 60초 이후 파란색 총알 생성 함수
 function spawnBlueBullet() {
+    const scale = getUIScale();
     // 기존과 동일하게 랜덤 방향에서 생성
     const side = Math.floor(Math.random() * 4);
     let x, y, angle;
-    const size = 8;
-    const speed = 150 + Math.random(); // 3.5~4.5로 더 빠르게
+    const size = isMobile() ? 16 * scale : 8 * scale; // 8*3
+    let speed = 150 + Math.random(); // 3.5~4.5로 더 빠르게
+    if (isMobile()) speed *= 0.7;
     const px = player.x + player.size / 2;
     const py = player.y + player.size / 2;
     if (side === 0) {
@@ -294,18 +307,29 @@ function spawnBlueBullet() {
     blueProjectiles.push(new BlueProjectile(x, y, size, speed, 'blue', angle));
 }
 
+// 충돌 감지 보정 변수 (사용자가 조정 가능)
+let collisionAdjustment = -3; // 양수: 더 관대한 판정, 음수: 더 타이트한 판정
+
 // 충돌 감지 함수 (플레이어와 총알 충돌만 체크)
 function detectCollisions() {
-    // 플레이어와 총알 충돌 (보수적으로: hitbox에 padding 적용)
-    const hitboxPadding = 2; // 값이 클수록 판정이 느슨해짐
+    const scale = getUIScale();
+    const actualPlayerSize = player.size * scale;
+    
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const projectile = projectiles[i];
-        if (
-            player.x + hitboxPadding < projectile.x + projectile.size - hitboxPadding &&
-            player.x + player.size - hitboxPadding > projectile.x - projectile.size + hitboxPadding &&
-            player.y + hitboxPadding < projectile.y + projectile.size - hitboxPadding &&
-            player.y + player.size - hitboxPadding > projectile.y - projectile.size + hitboxPadding
-        ) {
+        const psize = projectile.size; // 이미 scale이 적용된 값
+        // 원형 충돌 감지: 두 원의 중심점 간 거리와 반지름의 합 비교 (모바일 크기 반영)
+        const playerCenterX = player.x + actualPlayerSize / 2;
+        const playerCenterY = player.y + actualPlayerSize / 2;
+        const distance = Math.sqrt(
+            Math.pow(playerCenterX - projectile.x, 2) + 
+            Math.pow(playerCenterY - projectile.y, 2)
+        );
+        const playerRadius = actualPlayerSize / 2;
+        const projectileRadius = psize; // 이미 반지름 크기
+        
+        // 충돌 감지에 보정 적용
+        if (distance < playerRadius + projectileRadius + collisionAdjustment) {
             if (!gameOver) {
                 gameOver = true;
                 finalGameTime = gameTime;
@@ -313,23 +337,28 @@ function detectCollisions() {
                 showGameOverModal();
             }
         }
-        // 총알이 화면 밖으로 나가면 제거
         if (
-            projectile.x < -projectile.size || projectile.x > canvas.width + projectile.size ||
-            projectile.y < -projectile.size || projectile.y > canvas.height + projectile.size
+            projectile.x < -psize || projectile.x > canvas.width + psize ||
+            projectile.y < -psize || projectile.y > canvas.height + psize
         ) {
             projectiles.splice(i, 1);
         }
     }
-    // 파란색 총알 충돌 체크
     for (let i = blueProjectiles.length - 1; i >= 0; i--) {
         const projectile = blueProjectiles[i];
-        if (
-            player.x + hitboxPadding < projectile.x + projectile.size - hitboxPadding &&
-            player.x + player.size - hitboxPadding > projectile.x - projectile.size + hitboxPadding &&
-            player.y + hitboxPadding < projectile.y + projectile.size - hitboxPadding &&
-            player.y + player.size - hitboxPadding > projectile.y - projectile.size + hitboxPadding
-        ) {
+        const psize = projectile.size; // 이미 scale이 적용된 값
+        // 원형 충돌 감지: 두 원의 중심점 간 거리와 반지름의 합 비교 (모바일 크기 반영)
+        const playerCenterX = player.x + actualPlayerSize / 2;
+        const playerCenterY = player.y + actualPlayerSize / 2;
+        const distance = Math.sqrt(
+            Math.pow(playerCenterX - projectile.x, 2) + 
+            Math.pow(playerCenterY - projectile.y, 2)
+        );
+        const playerRadius = actualPlayerSize / 2;
+        const projectileRadius = psize; // 이미 반지름 크기
+        
+        // 충돌 감지에 보정 적용
+        if (distance < playerRadius + projectileRadius + collisionAdjustment) {
             if (!gameOver) {
                 gameOver = true;
                 finalGameTime = gameTime;
@@ -618,18 +647,20 @@ let bestTime = 0.0; // 최고 기록 저장 (소수점 포함)
 
 
 function updatePlayerPosition() {
+    let moveSpeed = player.speed;
+    if (isMobile()) moveSpeed *= 0.6;
     // 기존 키보드 입력에 따른 이동
     if (keys.ArrowUp && player.y > 0) {
-        player.y -= player.speed;
+        player.y -= moveSpeed;
     }
     if (keys.ArrowDown && player.y < canvas.height - player.size) {
-        player.y += player.speed;
+        player.y += moveSpeed;
     }
     if (keys.ArrowLeft && player.x > 0) {
-        player.x -= player.speed;
+        player.x -= moveSpeed;
     }
     if (keys.ArrowRight && player.x < canvas.width - player.size) {
-        player.x += player.speed;
+        player.x += moveSpeed;
     }
 
     // 화면 밖으로 나가지 않도록 처리
@@ -1130,12 +1161,14 @@ function gameLoop() {
         // 10초마다 빨간색 빠른 총알 여러 개 추가 (5개부터 시작, 10초마다 1개씩 증가)
         const multiBulletCount = 5 + Math.floor(gameTime / 10);
         if (gameTime - lastMultiBulletTime >= 10) {
+            const scale = getUIScale();
             for (let i = 0; i < multiBulletCount; i++) {
                 // 빨간색, 빠른 속도(4~5)
                 const side = Math.floor(Math.random() * 4);
                 let x, y, angle;
-                const size = 7;
-                const speed = 3 + Math.random(); // 3~4 사이 빠른 속도
+                const size = isMobile() ? 14 * scale : 7 * scale;
+                let speed = 3 + Math.random(); // 3~4 사이 빠른 속도
+                if (isMobile()) speed *= 0.7;
                 const px = player.x + player.size / 2;
                 const py = player.y + player.size / 2;
                 if (side === 0) { // 위
