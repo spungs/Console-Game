@@ -644,6 +644,7 @@ function initMobileControls() {
 }
 
 let bestTime = 0.0; // 최고 기록 저장 (소수점 포함)
+let isSavingRanking = false;
 
 
 function updatePlayerPosition() {
@@ -986,7 +987,8 @@ function showGameOverModal() {
     modal.style.display = 'block';
     // console.log('모달 표시 완료. display:', modal.style.display);
 
-    // Enter 키로만 저장 (ESC 키 이벤트 제거)
+    // 기존 이벤트 제거 후 새로 등록
+    playerNameInput.onkeydown = null;
     playerNameInput.onkeydown = function(e) {
         if (e.key === 'Enter') {
             saveRankingFromModal();
@@ -996,6 +998,8 @@ function showGameOverModal() {
 
 // 모달에서 랭킹 저장
 async function saveRankingFromModal() {
+    if (isSavingRanking) return;
+    isSavingRanking = true;
     const playerNameInput = document.getElementById('playerNameInput');
     const playerName = playerNameInput.value.trim();
     const t = texts[currentLanguage];
@@ -1003,16 +1007,17 @@ async function saveRankingFromModal() {
     if (!playerName) {
         alert(t.pleaseEnterName);
         playerNameInput.focus();
+        isSavingRanking = false;
         return;
     }
 
     if (!selectedCountryCode) {
         alert(t.pleaseSelectCountry);
+        isSavingRanking = false;
         return;
     }
 
     try {
-        // console.log('모달에서 랭킹 저장 시도:', playerName, finalGameTime, selectedCountryCode);
         const { data, error } = await supabaseClient
             .from('rankings')
             .insert({ 
@@ -1020,21 +1025,20 @@ async function saveRankingFromModal() {
                 survival_time: parseFloat(finalGameTime),
                 country_code: selectedCountryCode
             });
-        
         if (error) {
             console.error('랭킹 저장 실패:', error);
             alert(t.rankingSaveFailed + ' ' + error.message);
         } else {
-            // console.log('랭킹 저장 성공:', data);
-            // 선택한 국가를 로컬스토리지에 저장
             localStorage.setItem('selectedCountry', selectedCountryCode);
             closeGameOverModal();
-            await getBestRecord(); // 최고기록 먼저 업데이트
+            await getBestRecord();
             await getRankings();
         }
     } catch (err) {
         console.error('랭킹 저장 중 오류:', err);
         alert(t.rankingSaveError + ' ' + err.message);
+    } finally {
+        isSavingRanking = false;
     }
 }
 
