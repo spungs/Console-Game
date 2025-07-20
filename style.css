@@ -22,78 +22,124 @@ body {
     align-items: center;
 }
 
-/* 푸터 스타일 (하단 고정) */
-.visitor-stats {
+/* 헤더 스타일 */
+#header {
+    text-align: center;
+    margin-bottom: 20px;
     width: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 20px 0;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-    margin-top: auto;
 }
 
-.footer-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0 20px;
-}
-
-.other-services {
+.header-top {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-}
-
-.services-label {
-    font-size: 0.9em;
-    color: rgba(255, 255, 255, 0.8);
-    font-weight: 500;
-}
-
-.services-links {
-    display: flex;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
     gap: 15px;
+}
+
+#header h1 {
+    color: #333;
+    margin: 0;
+    font-size: 2.5em;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.header-nav {
+    display: flex;
+    align-items: center;
+    gap: 20px;
     flex-wrap: wrap;
     justify-content: center;
 }
 
-.service-link {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    text-decoration: none;
+.other-services-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.nav-label {
     font-size: 0.9em;
+    color: #666;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.nav-links {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.nav-service-link {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 15px;
+    text-decoration: none;
+    font-size: 0.85em;
     font-weight: 500;
     border: 1px solid rgba(255, 255, 255, 0.2);
     transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
+    white-space: nowrap;
 }
 
-.service-link:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.4);
+.nav-service-link:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    filter: brightness(1.1);
+}
+
+#languageToggle {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+#languageToggle:hover {
+    background: #2ecc71;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+}
+
+#challenge-message {
+    margin-top: 15px;
+    font-size: 1.1em;
+    color: #555;
+    font-weight: 500;
 }
 
 /* 모바일 반응형 */
 @media (max-width: 768px) {
-    .visitor-stats {
-        padding: 15px 0;
+    .other-services-nav {
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
     }
     
-    .services-links {
-        gap: 10px;
+    .nav-links {
+        justify-content: center;
+        gap: 8px;
     }
     
-    .service-link {
-        padding: 6px 12px;
-        font-size: 0.85em;
+    .nav-service-link {
+        padding: 5px 10px;
+        font-size: 0.8em;
+    }
+    
+    #header h1 {
+        font-size: 2em;
     }
 }
 
@@ -336,52 +382,6 @@ body {
         transform: scale(0.9);
         transform-origin: top center;
     }
-}
-
-#header {
-    text-align: center;
-    margin-bottom: 10px;
-    margin-top: 100px;
-}
-
-.header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    /* margin-bottom: 10px; */
-}
-
-#gameTitle {
-    margin: 0;
-    color: #333;
-    font-size: 2.5em;
-}
-
-#languageToggle {
-    padding: 8px 16px;
-    background-color: #3498db;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.3s;
-}
-
-#languageToggle:hover {
-    background-color: #2980b9;
-}
-
-#challenge-message {
-    font-size: 1.2em;
-    color: #e74c3c;
-    font-weight: bold;
-    padding: 10px;
-    background-color: #fff;
-    border: 2px solid #e74c3c;
-    border-radius: 5px;
-    margin: 0 auto;
-    width: fit-content;
 }
 
 .game-container {

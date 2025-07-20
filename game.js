@@ -659,7 +659,7 @@ const otherServices = [
 
 // 다른 서비스 링크들을 화면에 렌더링
 function renderServices() {
-    const servicesContainer = document.getElementById('services-links');
+    const servicesContainer = document.getElementById('nav-services-links');
     if (!servicesContainer) return;
 
     servicesContainer.innerHTML = '';
@@ -669,7 +669,7 @@ function renderServices() {
         link.href = service.url;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
-        link.className = 'service-link';
+        link.className = 'nav-service-link';
         
         // 현재 언어에 맞는 서비스명 표시
         const serviceName = service.name[currentLanguage] || service.name.ko; // 기본값은 한국어
@@ -680,7 +680,7 @@ function renderServices() {
     });
 
     // 서비스가 없으면 전체 섹션 숨기기
-    const otherServicesSection = document.querySelector('.other-services');
+    const otherServicesSection = document.querySelector('.other-services-nav');
     if (otherServicesSection) {
         otherServicesSection.style.display = otherServices.length > 0 ? 'flex' : 'none';
     }

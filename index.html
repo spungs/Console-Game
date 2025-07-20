@@ -13,7 +13,15 @@
         <div id="header">
             <div class="header-top">
                 <h1 id="gameTitle">Dodge Master</h1>
-                <button id="languageToggle" onclick="toggleLanguage()">한국어</button>
+                <div class="header-nav">
+                    <div class="other-services-nav">
+                        <span class="nav-label">🌐 Other Services:</span>
+                        <div class="nav-links" id="nav-services-links">
+                            <!-- 서비스 링크들이 동적으로 추가됩니다 -->
+                        </div>
+                    </div>
+                    <button id="languageToggle" onclick="toggleLanguage()">한국어</button>
+                </div>
             </div>
             <div id="challenge-message">Beat the best record!</div>
         </div>
@@ -80,19 +88,6 @@
             </div>
         </div>
     </div>
-
-    <!-- 푸터 -->
-    <footer class="visitor-stats">
-        <div class="footer-container">
-            <!-- 다른 서비스 링크 -->
-            <div class="other-services">
-                <span class="services-label" data-text="footer.otherServices">spungs's other services</span>
-                <div class="services-links" id="services-links">
-                    <!-- 서비스 링크들이 동적으로 추가됩니다 -->
-                </div>
-            </div>
-        </div>
-    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
