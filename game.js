@@ -646,6 +646,45 @@ function initMobileControls() {
 let bestTime = 0.0; // 최고 기록 저장 (소수점 포함)
 let isSavingRanking = false;
 
+// 다른 서비스 정보
+const otherServices = [
+    {
+        name: {
+            ko: "테토-에겐 테스트",
+            en: "Teto-Egen Test"
+        },
+        url: "https://spungs-teto-egen.com"
+    },
+];
+
+// 다른 서비스 링크들을 화면에 렌더링
+function renderServices() {
+    const servicesContainer = document.getElementById('services-links');
+    if (!servicesContainer) return;
+
+    servicesContainer.innerHTML = '';
+
+    otherServices.forEach(service => {
+        const link = document.createElement('a');
+        link.href = service.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.className = 'service-link';
+        
+        // 현재 언어에 맞는 서비스명 표시
+        const serviceName = service.name[currentLanguage] || service.name.ko; // 기본값은 한국어
+        
+        link.textContent = serviceName;
+        
+        servicesContainer.appendChild(link);
+    });
+
+    // 서비스가 없으면 전체 섹션 숨기기
+    const otherServicesSection = document.querySelector('.other-services');
+    if (otherServicesSection) {
+        otherServicesSection.style.display = otherServices.length > 0 ? 'flex' : 'none';
+    }
+}
 
 function updatePlayerPosition() {
     let moveSpeed = player.speed;
@@ -914,6 +953,9 @@ function updateAllTexts() {
     
     // 국가 목록 다시 로드 (언어 변경 시)
     loadCountryOptions();
+    
+    // 다른 서비스 링크 다시 렌더링 (언어 변경 시)
+    renderServices();
 }
 
 // 신기록 체크
@@ -1296,6 +1338,7 @@ async function initializeGame() {
     lastMultiBulletTime = 0;
     blueProjectiles.length = 0;
     lastBlueBulletTime = 0;
+    renderServices(); // 다른 서비스 링크 렌더링
     gameLoop();
 }
 

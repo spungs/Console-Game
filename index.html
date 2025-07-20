@@ -9,75 +9,91 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6002876774605337" crossorigin="anonymous"></script>
 </head>
 <body>
-    <div id="header">
-        <div class="header-top">
-            <h1 id="gameTitle">Dodge Master</h1>
-            <button id="languageToggle" onclick="toggleLanguage()">한국어</button>
-        </div>
-        <div id="challenge-message">Beat the best record!</div>
-    </div>
-    <div class="game-container">
-        <div class="game-area">
-            <div id="timer-box"></div>
-            <canvas id="gameCanvas"></canvas>
-            <div class="game-buttons">
-                <label class="toggle-switch">
-                  <input type="checkbox" id="joystick-toggle-switch" checked onchange="toggleJoystickSwitch()">
-                  <span class="slider"></span>
-                  <span class="toggle-label" id="joystick-toggle-label">Joystick On</span>
-                </label>
-                <button id="giveup-btn" onclick="onGiveUp()">Give Up</button>
-                <button id="retry-btn" onclick="retryGame()">Retry</button>
+    <div class="main-content">
+        <div id="header">
+            <div class="header-top">
+                <h1 id="gameTitle">Dodge Master</h1>
+                <button id="languageToggle" onclick="toggleLanguage()">한국어</button>
             </div>
-            
-            <!-- 모바일용 조이스틱 컨트롤 -->
-            <div id="mobile-controls" class="mobile-controls">
-                <div class="joystick-container" id="joystick">
-                    <div class="joystick-rings">
-                        <div class="joystick-ring ring-1"></div>
-                        <div class="joystick-ring ring-2"></div>
+            <div id="challenge-message">Beat the best record!</div>
+        </div>
+        <div class="game-container">
+            <div class="game-area">
+                <div id="timer-box"></div>
+                <canvas id="gameCanvas"></canvas>
+                <div class="game-buttons">
+                    <label class="toggle-switch">
+                      <input type="checkbox" id="joystick-toggle-switch" checked onchange="toggleJoystickSwitch()">
+                      <span class="slider"></span>
+                      <span class="toggle-label" id="joystick-toggle-label">Joystick On</span>
+                    </label>
+                    <button id="giveup-btn" onclick="onGiveUp()">Give Up</button>
+                    <button id="retry-btn" onclick="retryGame()">Retry</button>
+                </div>
+                
+                <!-- 모바일용 조이스틱 컨트롤 -->
+                <div id="mobile-controls" class="mobile-controls">
+                    <div class="joystick-container" id="joystick">
+                        <div class="joystick-rings">
+                            <div class="joystick-ring ring-1"></div>
+                            <div class="joystick-ring ring-2"></div>
+                        </div>
+                        <div class="joystick-pressure"></div>
+                        <div class="joystick-stick"></div>
+                        <div class="joystick-direction up">↑</div>
+                        <div class="joystick-direction down">↓</div>
+                        <div class="joystick-direction left">←</div>
+                        <div class="joystick-direction right">→</div>
                     </div>
-                    <div class="joystick-pressure"></div>
-                    <div class="joystick-stick"></div>
-                    <div class="joystick-direction up">↑</div>
-                    <div class="joystick-direction down">↓</div>
-                    <div class="joystick-direction left">←</div>
-                    <div class="joystick-direction right">→</div>
                 </div>
             </div>
-        </div>
-        <div id="ranking-container">
-            <h2 id="rankingTitle">Ranking</h2>
-            <div class="ranking-search-row">
-              <input type="text" id="ranking-search" placeholder="닉네임 검색">
-              <button id="ranking-search-btn">검색</button>
+            <div id="ranking-container">
+                <h2 id="rankingTitle">Ranking</h2>
+                <div class="ranking-search-row">
+                  <input type="text" id="ranking-search" placeholder="닉네임 검색">
+                  <button id="ranking-search-btn">검색</button>
+                </div>
+                <ul id="ranking-list"></ul>
+                <div id="ranking-pagination" style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:8px;"></div>
             </div>
-            <ul id="ranking-list"></ul>
-            <div id="ranking-pagination" style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:8px;"></div>
+        </div>
+
+        <!-- 게임 오버 모달 -->
+        <div id="gameOverModal" class="modal">
+            <div class="modal-content">
+                <h2 id="modalTitle">Game Over!</h2>
+                <p id="modalTime">Survival Time: <span id="finalTime">0.000</span>s</p>
+                <p id="modalMessage">Enter your name for ranking:</p>
+                <input type="text" id="playerNameInput" placeholder="Player Name" maxlength="20">
+                <div class="country-select-container">
+                    <label for="countrySelect" id="countrySelectLabel">Country:</label>
+                    <div class="select-wrapper">
+                        <select id="countrySelect" size="8">
+                            <!-- 국가 옵션들이 여기에 동적으로 추가됩니다 -->
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button id="saveRankingBtn" onclick="saveRankingFromModal()">Save Ranking</button>
+                    <button id="closeModalBtn" onclick="closeGameOverModal()">Close</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- 게임 오버 모달 -->
-    <div id="gameOverModal" class="modal">
-        <div class="modal-content">
-            <h2 id="modalTitle">Game Over!</h2>
-            <p id="modalTime">Survival Time: <span id="finalTime">0.000</span>s</p>
-            <p id="modalMessage">Enter your name for ranking:</p>
-            <input type="text" id="playerNameInput" placeholder="Player Name" maxlength="20">
-            <div class="country-select-container">
-                <label for="countrySelect" id="countrySelectLabel">Country:</label>
-                <div class="select-wrapper">
-                    <select id="countrySelect" size="8">
-                        <!-- 국가 옵션들이 여기에 동적으로 추가됩니다 -->
-                    </select>
+    <!-- 푸터 -->
+    <footer class="visitor-stats">
+        <div class="footer-container">
+            <!-- 다른 서비스 링크 -->
+            <div class="other-services">
+                <span class="services-label" data-text="footer.otherServices">spungs's other services</span>
+                <div class="services-links" id="services-links">
+                    <!-- 서비스 링크들이 동적으로 추가됩니다 -->
                 </div>
             </div>
-            <div class="modal-buttons">
-                <button id="saveRankingBtn" onclick="saveRankingFromModal()">Save Ranking</button>
-                <button id="closeModalBtn" onclick="closeGameOverModal()">Close</button>
-            </div>
         </div>
-    </div>
+    </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
     <script src="country-list.js"></script>
